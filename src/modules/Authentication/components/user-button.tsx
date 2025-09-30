@@ -17,20 +17,15 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useSettings } from "@/hooks/useSettings";
-import { ThemeToggleButton, useThemeTransition } from "@/components/ui/shadcn-io/theme-toggle-button";
+import {
+  ThemeToggleButton,
+  useThemeTransition,
+} from "@/components/ui/shadcn-io/theme-toggle-button";
 import type { Mode } from "@/contexts/settingsContext";
-
-interface UserData {
-  id: string;
-  email: string | null;
-  name: string | null;
-  image: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type { UserProps } from "@/modules/Layout/Types";
 
 interface UserButtonProps {
-  user: UserData | null;
+  user: UserProps | null;
   onLogout?: () => void | Promise<void>;
   onSettings?: () => void;
   onProfile?: () => void;
@@ -61,16 +56,15 @@ export default function UserButton({
   const router = useRouter();
   const { setTheme } = useTheme();
   const { settings, updateSettings } = useSettings();
-  const { startTransition } = useThemeTransition()
-
+  const { startTransition } = useThemeTransition();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+  }, [user]);
 
   const handleThemeToggle = useCallback(() => {
-    const newMode: Mode = settings.mode === 'dark' ? 'light' : 'dark';
-    
+    const newMode: Mode = settings.mode === "dark" ? "light" : "dark";
+
     startTransition(() => {
       const updatedSettings = {
         ...settings,
@@ -79,44 +73,37 @@ export default function UserButton({
           ...settings.theme,
           styles: {
             light: settings.theme.styles?.light || {},
-            dark: settings.theme.styles?.dark || {}
-          }
-        }
-      }
-      updateSettings(updatedSettings)
-      setTheme(newMode)
-    })
-  }, [settings, updateSettings, setTheme, startTransition])
+            dark: settings.theme.styles?.dark || {},
+          },
+        },
+      };
+      updateSettings(updatedSettings);
+      setTheme(newMode);
+    });
+  }, [settings, updateSettings, setTheme, startTransition]);
 
-  const handleImageLoad = () => {
-    console.log('✅ Image loaded successfully!');
-  };
-
-
-   const onSignOut = async()=>{
+  const onSignOut = async () => {
     await authClient.signOut({
-      fetchOptions:{
-        onSuccess:()=>{
-          router.push("/sign-in")
-        }
-      }
-    })
-  }
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/sign-in");
+        },
+      },
+    });
+  };
 
   const handleLogout = async () => {
-  
-      setIsLoading(true);
-      try {
-        await onSignOut();
-      } catch (error) {
-        console.error("Logout error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    
+    setIsLoading(true);
+    try {
+      await onSignOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Get user initials for avatar fallback
+  
   const getUserInitials = (name: string | null, email: string | null) => {
     if (name) {
       return name
@@ -132,7 +119,7 @@ export default function UserButton({
     return "U";
   };
 
-  // Format member since date
+  
   const formatMemberSince = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       month: "long",
@@ -140,14 +127,14 @@ export default function UserButton({
     }).format(new Date(date));
   };
 
-  // Avatar sizes
+  
   const avatarSizes = {
     sm: "h-8 w-8",
     md: "h-10 w-10",
     lg: "h-12 w-12",
   };
 
-  // Don't render if no user
+  
   if (!user) {
     return null;
   }
@@ -158,18 +145,23 @@ export default function UserButton({
         <Button
           variant="ghost"
           className={`relative flex items-center gap-2 ${
-            size === "sm" ? "h-9 px-2" : size === "lg" ? "h-12 px-3" : "h-10 px-2"
+            size === "sm"
+              ? "h-9 px-2"
+              : size === "lg"
+              ? "h-12 px-3"
+              : "h-10 px-2"
           } rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border`}
           disabled={isLoading}
         >
-          <div className={`${avatarSizes[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center`}>
+          <div
+            className={`${avatarSizes[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center`}
+          >
             {user.image ? (
               <Image
                 src={user.image}
                 alt={user.name || "User avatar"}
                 fill
                 className="object-cover"
-                onLoad={handleImageLoad}
                 priority
               />
             ) : (
@@ -178,14 +170,16 @@ export default function UserButton({
               </span>
             )}
           </div>
-          
+
           <div className="hidden md:flex flex-col items-start">
             <span className="text-sm font-medium leading-none">
               {user.name || "User"}
             </span>
             {showEmail && user.email && (
               <span className="text-xs text-muted-foreground leading-none mt-0.5">
-                {user.email.length > 20 ? `${user.email.slice(0, 20)}...` : user.email}
+                {user.email.length > 20
+                  ? `${user.email.slice(0, 20)}...`
+                  : user.email}
               </span>
             )}
           </div>
@@ -200,12 +194,11 @@ export default function UserButton({
           )}
         </Button>
       </DropdownMenuTrigger>
-      
+
       <DropdownMenuContent className="w-72 p-2" align="end" forceMount>
         <DropdownMenuLabel className="font-normal p-3">
           <div className="flex flex-col space-y-3">
             <div className="flex items-start space-x-3">
-              
               <div className="h-14 w-14 relative rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center ring-2 ring-primary/10 shrink-0">
                 {user.image ? (
                   <Image
@@ -213,7 +206,6 @@ export default function UserButton({
                     alt={user.name || "User avatar"}
                     fill
                     className="object-cover"
-                    onLoad={handleImageLoad}
                     priority
                   />
                 ) : (
@@ -228,7 +220,10 @@ export default function UserButton({
                     {user.name || "User"}
                   </p>
                   {showBadge && (
-                    <Badge variant={badgeVariant} className="h-5 px-2 text-[10px] font-medium">
+                    <Badge
+                      variant={badgeVariant}
+                      className="h-5 px-2 text-[10px] font-medium"
+                    >
                       {badgeText}
                     </Badge>
                   )}
@@ -248,13 +243,13 @@ export default function UserButton({
             </div>
           </div>
         </DropdownMenuLabel>
-        
+
         <DropdownMenuSeparator className="my-2" />
-        
+
         <div className="space-y-1">
           {onProfile && (
-            <DropdownMenuItem 
-              onClick={onProfile} 
+            <DropdownMenuItem
+              onClick={onProfile}
               className="cursor-pointer rounded-md py-2.5 px-3 hover:bg-accent/50 transition-colors"
             >
               <div className="flex items-center justify-between w-full">
@@ -267,10 +262,10 @@ export default function UserButton({
               </div>
             </DropdownMenuItem>
           )}
-          
+
           {onBilling && (
-            <DropdownMenuItem 
-              onClick={onBilling} 
+            <DropdownMenuItem
+              onClick={onBilling}
               className="cursor-pointer rounded-md py-2.5 px-3 hover:bg-accent/50 transition-colors"
             >
               <div className="flex items-center justify-between w-full">
@@ -283,10 +278,10 @@ export default function UserButton({
               </div>
             </DropdownMenuItem>
           )}
-          
+
           {onSettings && (
-            <DropdownMenuItem 
-              onClick={onSettings} 
+            <DropdownMenuItem
+              onClick={onSettings}
               className="cursor-pointer rounded-md py-2.5 px-3 hover:bg-accent/50 transition-colors"
             >
               <div className="flex items-center justify-between w-full">
@@ -300,25 +295,29 @@ export default function UserButton({
             </DropdownMenuItem>
           )}
         </div>
-        
+
         <DropdownMenuSeparator className="my-2" />
-        
+
         {/* Theme Toggle */}
         {mounted && (
           <div className="px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Theme</span>
-              <ThemeToggleButton 
-                theme={settings.mode === 'system' ? 'light' : settings.mode as 'light' | 'dark'}
+              <ThemeToggleButton
+                theme={
+                  settings.mode === "system"
+                    ? "light"
+                    : (settings.mode as "light" | "dark")
+                }
                 onClick={handleThemeToggle}
                 variant="polygon"
               />
             </div>
           </div>
         )}
-        
+
         <DropdownMenuSeparator className="my-2" />
-        
+
         <DropdownMenuItem
           onClick={handleLogout}
           disabled={isLoading}
