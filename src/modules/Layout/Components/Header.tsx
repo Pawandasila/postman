@@ -18,7 +18,7 @@ interface HeaderProps {
 const Header = ({ user }: HeaderProps) => {
   return (
     <header className="h-14 w-full border-b border-border bg-background flex items-center justify-between px-4 gap-3">
-      {/* Left Section - Logo */}
+      
       <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer shrink-0">
         <Image
           src={"/logo/logo.png"}
@@ -31,15 +31,12 @@ const Header = ({ user }: HeaderProps) => {
         <span className="font-semibold text-lg">PostBoy</span>
       </div>
 
-      {/* Workspace Selector */}
       <Workspace />
-
-      {/* Center Section - Search */}
+      
       <div className="flex-1 max-w-md">
         <SearchBar />
       </div>
-
-      {/* Right Section - Actions and User */}
+      
       <div className="flex items-center gap-2 shrink-0">
         <Hint label="Settings" side="bottom">
           <Button size="sm" variant="ghost" className="h-9 w-9 p-0">
@@ -51,7 +48,7 @@ const Header = ({ user }: HeaderProps) => {
         
         <div className="h-6 w-px bg-border hidden sm:block" />
         
-        <UserButton user={user} size="sm" showEmail={false} showMemberSince={false} />
+        <UserButton user={user} size="md" showEmail={true} showMemberSince={true} />
       </div>
     </header>
   );
