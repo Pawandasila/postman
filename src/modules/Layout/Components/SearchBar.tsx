@@ -14,8 +14,12 @@ import {
 
 const SearchBar = () => {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  // Handle keyboard shortcut
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -46,8 +50,8 @@ const SearchBar = () => {
         </span>
       </button>
 
-      {/* Command Dialog */}
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      {mounted && (
+        <CommandDialog open={open} onOpenChange={setOpen}>
         <div className="bg-popover border border-border">
           <CommandInput 
             placeholder="Search requests, collections, or commands..." 
@@ -161,6 +165,7 @@ const SearchBar = () => {
           </div>
         </div>
       </CommandDialog>
+      )}
     </>
   )
 }

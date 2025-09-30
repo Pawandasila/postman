@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SettingsProvider } from "@/contexts/settingsContext";
+import ReactQueryProviders from "@/components/providers/react-query-providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,17 +31,19 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SettingsProvider>
-            {children}
-            <Toaster richColors />
-          </SettingsProvider>
-        </ThemeProvider>
+        <ReactQueryProviders>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <SettingsProvider>
+              {children}
+              <Toaster richColors />
+            </SettingsProvider>
+          </ThemeProvider>
+        </ReactQueryProviders>
       </body>
     </html>
   );
