@@ -6,7 +6,7 @@ export default async function Home() {
 
   return (
     <div>
-      <UserButton user={user} />
+      {/* <UserButton user={user} /> */}
     </div>
   );
 }

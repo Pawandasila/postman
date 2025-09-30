@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { LogOut, Settings, CreditCard, User as UserIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -15,6 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useSettings } from "@/hooks/useSettings";
+import { ThemeToggleButton, useThemeTransition } from "@/components/ui/shadcn-io/theme-toggle-button";
+import type { Mode } from "@/contexts/settingsContext";
 
 interface UserData {
   id: string;
@@ -53,7 +57,36 @@ export default function UserButton({
   showMemberSince = true,
 }: UserButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const { setTheme } = useTheme();
+  const { settings, updateSettings } = useSettings();
+  const { startTransition } = useThemeTransition()
+
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleThemeToggle = useCallback(() => {
+    const newMode: Mode = settings.mode === 'dark' ? 'light' : 'dark';
+    
+    startTransition(() => {
+      const updatedSettings = {
+        ...settings,
+        mode: newMode,
+        theme: {
+          ...settings.theme,
+          styles: {
+            light: settings.theme.styles?.light || {},
+            dark: settings.theme.styles?.dark || {}
+          }
+        }
+      }
+      updateSettings(updatedSettings)
+      setTheme(newMode)
+    })
+  }, [settings, updateSettings, setTheme, startTransition])
 
    const onSignOut = async()=>{
     await authClient.signOut({
@@ -249,6 +282,22 @@ export default function UserButton({
             </DropdownMenuItem>
           )}
         </div>
+        
+        <DropdownMenuSeparator className="my-2" />
+        
+        {/* Theme Toggle */}
+        {mounted && (
+          <div className="px-3 py-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Theme</span>
+              <ThemeToggleButton 
+                theme={settings.mode === 'system' ? 'light' : settings.mode as 'light' | 'dark'}
+                onClick={handleThemeToggle}
+                variant="polygon"
+              />
+            </div>
+          </div>
+        )}
         
         <DropdownMenuSeparator className="my-2" />
         
