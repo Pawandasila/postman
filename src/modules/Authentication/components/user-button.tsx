@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { LogOut, Settings, CreditCard, User as UserIcon } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,6 +88,11 @@ export default function UserButton({
     })
   }, [settings, updateSettings, setTheme, startTransition])
 
+  const handleImageLoad = () => {
+    console.log('✅ Image loaded successfully!');
+  };
+
+
    const onSignOut = async()=>{
     await authClient.signOut({
       fetchOptions:{
@@ -157,16 +162,22 @@ export default function UserButton({
           } rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border`}
           disabled={isLoading}
         >
-          <Avatar className={avatarSizes[size]}>
-            <AvatarImage
-              src={user.image || undefined}
-              alt={user.name || "User avatar"}
-              onError={(e) => console.error("Image failed to load:", user.image, e)}
-            />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold">
-              {getUserInitials(user.name, user.email)}
-            </AvatarFallback>
-          </Avatar>
+          <div className={`${avatarSizes[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center`}>
+            {user.image ? (
+              <Image
+                src={user.image}
+                alt={user.name || "User avatar"}
+                fill
+                className="object-cover"
+                onLoad={handleImageLoad}
+                priority
+              />
+            ) : (
+              <span className="text-primary-foreground font-semibold text-sm">
+                {getUserInitials(user.name, user.email)}
+              </span>
+            )}
+          </div>
           
           <div className="hidden md:flex flex-col items-start">
             <span className="text-sm font-medium leading-none">
@@ -194,16 +205,23 @@ export default function UserButton({
         <DropdownMenuLabel className="font-normal p-3">
           <div className="flex flex-col space-y-3">
             <div className="flex items-start space-x-3">
-              <Avatar className="h-14 w-14 ring-2 ring-primary/10">
-                <AvatarImage
-                  src={user.image || undefined}
-                  alt={user.name || "User avatar"}
-                  onError={(e) => console.error("Image failed to load:", user.image, e)}
-                />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold text-lg">
-                  {getUserInitials(user.name, user.email)}
-                </AvatarFallback>
-              </Avatar>
+              
+              <div className="h-14 w-14 relative rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center ring-2 ring-primary/10 shrink-0">
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt={user.name || "User avatar"}
+                    fill
+                    className="object-cover"
+                    onLoad={handleImageLoad}
+                    priority
+                  />
+                ) : (
+                  <span className="text-primary-foreground font-semibold text-lg">
+                    {getUserInitials(user.name, user.email)}
+                  </span>
+                )}
+              </div>
               <div className="flex-1 flex flex-col space-y-1.5">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold leading-none">
