@@ -1,0 +1,12 @@
+name: postboy
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postboy
+    ports:
+      - "5431:5432"
+    # volumes:
+    #   - db_data:/var/lib/postgresql/data
