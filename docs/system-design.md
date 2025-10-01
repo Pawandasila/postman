@@ -1,8 +1,8 @@
 # System Design - PostBoy API Testing Platform
 
-**Version:** 1.0.0  
-**Framework:** Next.js 15.5.4 (App Router)  
-**Last Updated:** October 1, 2025
+**Version:** 2.0.0  
+**Framework:** Next.js 15.5.4 (App Router + Turbopack)  
+**Last Updated:** October 1, 2025 (Major Update)
 
 ---
 
@@ -33,18 +33,27 @@
 - ✅ Collection & Request Organization
 - ✅ Request Playground with Tabs
 - ✅ HTTP Method Support (GET, POST, PUT, DELETE, PATCH)
-- ✅ Headers, Parameters & Body Editing
-- ✅ Real-time UI Updates
-- ✅ Keyboard Shortcuts (Ctrl+G for new request)
+- ✅ Headers, Parameters & Body Editing with Auto-save (Debounced)
+- ✅ **Default Headers** (Content-Type, Accept, User-Agent)
+- ✅ Real-time UI Updates with Toast Notifications
+- ✅ Keyboard Shortcuts (Ctrl+G, Ctrl+S)
 - ✅ Click-to-Open Requests from Collections
+- ✅ **Response Viewer** with Monaco Editor
+- ✅ **Headers Tab** with Search & Filter
+- ✅ **Saved & Unsaved Request Execution**
+- ✅ Request History & Run Tracking
+- ✅ Error Handling with User Feedback
 
 ### Technology Stack:
 - **Frontend**: Next.js 15.5.4, React 19, TypeScript
-- **Styling**: Tailwind CSS v4, shadcn/ui components
+- **Styling**: Tailwind CSS v4 (OKLCH), shadcn/ui components
 - **State**: Zustand (client), TanStack Query (server)
 - **Backend**: Next.js Server Actions, Prisma ORM
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL with JsonValue types
 - **Auth**: Better Auth (OAuth)
+- **HTTP Client**: Axios (with custom error handling)
+- **Code Editor**: Monaco Editor (VS Dark theme)
+- **Notifications**: Sonner (toast library)
 
 ---
 
@@ -1502,6 +1511,802 @@ mindmap
         OAuth Only
         Session Cookies
         Protected Routes
+
+---
+
+## Recent Updates (Version 2.0.0)
+
+### 1. **Enhanced Request Execution System**
+
+#### Unsaved Request Support
+Previously, only saved requests could be executed. Now supports both:
+
+```typescript
+// Hook now accepts tab instead of requestId
+export function useRunRequest(tab: RequestTab) {
+  return useMutation({
+    mutationFn: async () => {
+      // Saved request
+      if (tab.requestId) {
+        return await run(tab.requestId);
+      }
+      
+      // Unsaved request
+      const requestData: Request = {
+        name: tab.title || "Untitled Request",
+        method: tab.method as any,
+        url: tab.url || "",
+        body: tab.body,
+        headers: tab.headers,
+        parameters: tab.parameters,
+      };
+      
+      return await runUnsavedRequest(requestData);
+    },
+    // ... success/error handlers
+  });
+}
+```
+
+**Benefits:**
+- Test APIs without saving requests
+- Faster prototyping workflow
+- No database clutter from temporary requests
+
+#### Default Headers System
+
+Automatically includes essential headers on every request:
+
+```typescript
+const defaultHeaders: Record<string, string> = {
+  'Content-Type': 'application/json; charset=UTF-8',
+  'Accept': 'application/json',
+  'User-Agent': 'PostBoy/1.0',
+};
+
+// Merge with user headers (user headers take precedence)
+const mergedHeaders = {
+  ...defaultHeaders,
+  ...(req.headers || {}),
+};
+```
+
+**Pre-populated in UI:**
+```typescript
+const DEFAULT_HEADERS = [
+  { key: "Content-Type", value: "application/json; charset=UTF-8", enabled: true },
+  { key: "Accept", value: "application/json", enabled: true },
+];
+```
+
+### 2. **Response Viewer Overhaul**
+
+#### Modern UI Design
+
+**Before:**
+- Fixed height (h-96 = 384px)
+- Hardcoded dark colors (zinc-950, zinc-900)
+- 4 tabs (JSON, Raw, Headers, Test Results)
+- No search functionality
+- Basic copy functionality
+
+**After:**
+- Flexible height (min-h-[600px] with proper flex layout)
+- Theme-aware colors (bg-background, text-foreground, border-border)
+- 2 essential tabs (Body, Headers)
+- Real-time header search
+- Toast notifications on actions
+- Improved Monaco Editor integration
+
+#### Headers Display & Search
+
+```typescript
+// Memoized filtering for performance
+const filteredHeaders = useMemo(() => {
+  const headers = responseData.requestRun.headers ?? {};
+  if (!searchTerm) return Object.entries(headers);
+  
+  return Object.entries(headers).filter(
+    ([key, value]) =>
+      key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      value.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+}, [responseData.requestRun.headers, searchTerm]);
+```
+
+**Features:**
+- Live search as you type
+- Character count badges
+- Hover-to-copy buttons
+- Empty state messaging
+- Monospace font for technical values
+
+#### Status Bar Improvements
+
+**Compact & Information-Dense:**
+```tsx
+<div className="flex items-center gap-6">
+  {/* Color-coded status badge with icon */}
+  <div className={`${getStatusBgColor(status)} ${getStatusColor(status)}`}>
+    {getStatusIcon(status)} {/* ✓, ⚠, ✕ icons */}
+    <span>{status ?? "—"}</span>
+    <span>{statusText ?? "No Response"}</span>
+  </div>
+  
+  {/* Inline metrics */}
+  <div>⏱ {duration}ms</div>
+  <div>💾 {formatBytes(size)}</div>
+  <div>📄 {isJson ? "JSON" : "Text"}</div>
+</div>
+```
+
+### 3. **Data Transformation Pipeline**
+
+#### Problem: Type Mismatches
+
+Prisma stores JSON fields as strings in PostgreSQL, causing type errors:
+
+**Issue Chain:**
+1. Headers saved as: `JSON.stringify(result.headers)` → `"{\"content-type\":\"...\"}"` (string)
+2. Prisma returns: `JsonValue` type (can be string, object, array, etc.)
+3. Components expect: `Record<string, string>` object
+4. Empty string `""` causes: `JSON.parse("")` → SyntaxError
+
+#### Solution: Robust Parsing
+
+**In Server Actions (`run` function):**
+```typescript
+let parsedHeaders: Record<string, string> | undefined;
+
+try {
+  if (request.headers) {
+    if (typeof request.headers === 'string') {
+      parsedHeaders = JSON.parse(request.headers);
+    } else if (typeof request.headers === 'object') {
+      parsedHeaders = request.headers as Record<string, string>;
+    }
+  }
+} catch (e) {
+  console.error('Failed to parse request headers:', e);
+  parsedHeaders = undefined;
+}
+```
+
+**In Hook Transformation:**
+```typescript
+let parsedHeaders: Record<string, string> = {};
+try {
+  if (typeof data.requestRun.headers === 'string' && 
+      data.requestRun.headers.trim() !== '') {
+    parsedHeaders = JSON.parse(data.requestRun.headers);
+  } else if (typeof data.requestRun.headers === 'object' && 
+             data.requestRun.headers !== null) {
+    parsedHeaders = data.requestRun.headers as Record<string, string>;
+  }
+} catch (e) {
+  console.error('Failed to parse headers:', e);
+  parsedHeaders = {};
+}
+```
+
+**Database Save Safety:**
+```typescript
+headers: result.headers ? JSON.stringify(result.headers) : JSON.stringify({})
+```
+
+**Key Principles:**
+- Always check type before parsing
+- Validate non-empty strings before `JSON.parse()`
+- Provide fallback values (`{}` instead of `""`)
+- Log errors for debugging
+- Never crash on bad data
+
+### 4. **Headers & Parameters Format Standardization**
+
+#### Problem: Array vs Object Format
+
+**Old Format (Array):**
+```json
+[
+  {"key": "Content-Type", "value": "application/json", "enabled": true},
+  {"key": "Authorization", "value": "Bearer token", "enabled": true}
+]
+```
+
+**Issue:** Axios expects `{key: value}` format, not array of objects.
+
+#### Solution: Convert to Object Format
+
+**On Save:**
+```typescript
+const handleHeadersChange = (data: { key: string; value: string; enabled?: boolean }[]) => {
+  const filteredHeaders = data.filter((item) => 
+    item.enabled !== false && (item.key.trim() || item.value.trim())
+  );
+  
+  // Convert array to object
+  const headersObject = filteredHeaders.reduce((acc, item) => {
+    if (item.key.trim()) {
+      acc[item.key.trim()] = item.value;
+    }
+    return acc;
+  }, {} as Record<string, string>);
+  
+  updateTab(tab.id, { headers: JSON.stringify(headersObject) });
+};
+```
+
+**New Format (Object):**
+```json
+{
+  "Content-Type": "application/json",
+  "Authorization": "Bearer token"
+}
+```
+
+**Backward Compatibility:**
+```typescript
+const parseKeyValueData = (jsonString?: string) => {
+  const parsed = JSON.parse(jsonString);
+  
+  // If array, return as-is (old format)
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  
+  // If object, convert to array for form display
+  if (typeof parsed === 'object' && parsed !== null) {
+    return Object.entries(parsed).map(([key, value]) => ({
+      key,
+      value: String(value),
+      enabled: true
+    }));
+  }
+  
+  return [];
+};
+```
+
+### 5. **Error Handling & User Feedback**
+
+#### Comprehensive Error Management
+
+**At Every Layer:**
+
+1. **Server Action Layer:**
+```typescript
+try {
+  const result = await sendRequest(requestConfig);
+} catch (error: any) {
+  return {
+    success: false,
+    error: error.message || "Unknown error",
+    requestRun: {
+      // Save failed request to database
+      status: 0,
+      statusText: "Failed",
+      headers: JSON.stringify({}),
+      body: error.message,
+      durationMs: 0,
+    }
+  };
+}
+```
+
+2. **Hook Layer:**
+```typescript
+onError: (error) => {
+  console.error('Failed to run request:', error);
+  toast.error("Request failed", {
+    description: error.message
+  });
+}
+```
+
+3. **Component Layer:**
+```typescript
+try {
+  await mutateAsync();
+  toast.success("Request sent successfully!");
+} catch (error) {
+  toast.error("Failed to send request.");
+} finally {
+  setIsSending(false);
+}
+```
+
+#### Toast Notifications
+
+**Success States:**
+- ✅ "Request sent successfully!"
+- ✅ "Headers updated successfully"
+- ✅ "Response copied to clipboard!"
+- ✅ "Response downloaded successfully!"
+
+**Error States:**
+- ❌ "Failed to send request"
+- ❌ "Failed to copy to clipboard"
+- ❌ "Please enter a valid URL"
+
+### 6. **Performance Optimizations**
+
+#### useMemo for Expensive Operations
+
+**Response Body Parsing:**
+```typescript
+const { responseBody, formattedJsonString, rawBody, isJson } = useMemo(() => {
+  let body: any = {};
+  let formatted = "";
+  let isJsonResponse = false;
+  const raw = responseData?.requestRun?.body;
+
+  try {
+    if (typeof raw === "string") {
+      body = raw.length ? JSON.parse(raw) : raw;
+      isJsonResponse = true;
+    } else {
+      body = raw ?? {};
+    }
+    formatted = JSON.stringify(body, null, 2);
+  } catch (e) {
+    body = raw ?? {};
+    formatted = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+  }
+
+  return { responseBody: body, formattedJsonString: formatted, rawBody: raw, isJson: isJsonResponse };
+}, [responseData]);
+```
+
+**Header Filtering:**
+```typescript
+const filteredHeaders = useMemo(() => {
+  const headers = responseData.requestRun.headers ?? {};
+  if (!searchTerm) return Object.entries(headers);
+  
+  return Object.entries(headers).filter(
+    ([key, value]) =>
+      key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      value.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+}, [responseData.requestRun.headers, searchTerm]);
+```
+
+**Benefits:**
+- Parse response body only when data changes
+- Filter headers only when search term or headers change
+- Prevent unnecessary re-renders
+- Improve scroll performance
+
+#### Debounced Auto-save
+
+Already implemented in key-value-form.tsx using custom debounce with useRef pattern.
+
+### 7. **Console Logging for Debugging**
+
+Strategic logging at critical points:
+
+```typescript
+// 1. Request preparation
+console.log('sendRequest called with:', {
+  method, url, headers, parameters
+});
+
+// 2. Request body
+console.log('Request body being sent:', {
+  originalBody, parsedBody
+});
+
+// 3. Response received
+console.log('Axios response received:', {
+  status, statusText, data, dataType: typeof data
+});
+
+// 4. Data transformation
+console.log('Response data being set:', transformedData);
+
+// 5. Component reception
+console.log('Headers in response viewer:', headers);
+console.log('Headers type:', typeof headers);
+```
+
+**Debugging Workflow:**
+1. Check what's sent to API
+2. Check what API returns
+3. Check how it's transformed
+4. Check what component receives
+5. Identify where data is lost/corrupted
+
+### 8. **Type Safety Improvements**
+
+#### RequestTab Interface
+
+```typescript
+export type RequestTab = {
+  id: string;
+  title: string;
+  method: string;
+  url: string;
+  body?: string;
+  headers?: string;        // JSON string
+  parameters?: string;     // JSON string
+  unsavedChanges?: boolean;
+  requestId?: string;      // undefined for unsaved requests
+  collectionId?: string;
+  workspaceId?: string;
+};
+```
+
+#### ResponseData Interface
+
+```typescript
+export interface ResponseData {
+  success: boolean;
+  requestRun: {
+    id: string;
+    requestId?: string;
+    status?: number;
+    statusText?: string;
+    headers?: Record<string, string>;  // Plain object
+    body?: string | object | null;
+    durationMs?: number;
+    createdAt?: string;
+  };
+  result?: {
+    status?: number;
+    statusText?: string;
+    duration?: number;
+    size?: number;
+  };
+}
+```
+
+### 9. **Axios Configuration**
+
+#### Request Config
+
+```typescript
+const config: AxiosRequestConfig = {
+  method: req.method,
+  url: req.url,
+  headers: mergedHeaders,    // Includes defaults
+  params: req.parameters,
+  data: req.body,
+  validateStatus: () => true, // Don't throw on 4xx/5xx
+};
+```
+
+**Key Decision:** `validateStatus: () => true`
+- Prevents axios from throwing on non-2xx responses
+- Allows us to capture and display all responses (including errors)
+- Better UX: show 404, 500 responses instead of generic error
+
+#### Response Processing
+
+```typescript
+// Safely extract headers
+const headersObject = Object.keys(response.headers).reduce((acc, key) => {
+  const value = response.headers[key];
+  if (typeof value === 'string') {
+    acc[key] = value;
+  } else if (value !== undefined && value !== null) {
+    acc[key] = String(value);
+  }
+  return acc;
+}, {} as Record<string, string>);
+```
+
+### 10. **UI/UX Enhancements**
+
+#### Theme-Aware Colors
+
+**Old (Hardcoded):**
+```tsx
+className="bg-zinc-950 text-white border-zinc-800"
+```
+
+**New (Theme Variables):**
+```tsx
+className="bg-background text-foreground border-border"
+```
+
+**Benefits:**
+- Supports light/dark mode
+- Consistent with design system
+- Easy to customize
+- OKLCH color space (better perceptual uniformity)
+
+#### Status Indicators
+
+**Color-Coded by HTTP Status:**
+```typescript
+const getStatusColor = (status?: number): string => {
+  const s = typeof status === "number" ? status : 0;
+  if (s >= 200 && s < 300) return "text-green-500";
+  if (s >= 300 && s < 400) return "text-yellow-500";
+  if (s >= 400 && s < 500) return "text-orange-500";
+  if (s >= 500) return "text-red-500";
+  return "text-muted-foreground";
+};
+
+const getStatusIcon = (status?: number) => {
+  const s = typeof status === "number" ? status : 0;
+  if (s >= 200 && s < 300) return <CheckCircle2 />;  // ✓
+  if (s >= 300 && s < 400) return <AlertCircle />;   // ⚠
+  if (s >= 400) return <XCircle />;                  // ✕
+  return <Network />;
+};
+```
+
+#### Responsive Layout
+
+```tsx
+<div className="w-full min-h-[600px] flex flex-col">
+  {/* Status Bar */}
+  <div className="border-b border-border bg-card">
+    {/* ... */}
+  </div>
+  
+  {/* Tabs Container */}
+  <Tabs className="flex-1 flex flex-col overflow-hidden">
+    {/* Tab Headers */}
+    <div className="border-b border-border bg-muted/30">
+      {/* ... */}
+    </div>
+    
+    {/* Tab Content */}
+    <TabsContent className="flex-1 m-0 overflow-hidden min-h-[450px]">
+      <MonacoEditor height="450px" />
+    </TabsContent>
+  </Tabs>
+</div>
+```
+
+**Key Principles:**
+- Use flexbox for dynamic layouts
+- Set explicit heights for Monaco Editor
+- Use min-h for minimum constraints
+- Use flex-1 for flexible growth
+- Handle overflow properly
+
+---
+
+## Updated Data Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as Request Bar
+    participant Hook as useRunRequest
+    participant SA as Server Action
+    participant Axios as Axios Client
+    participant API as Target API
+    participant DB as PostgreSQL
+    participant Store as Zustand Store
+    participant RV as Response Viewer
+
+    U->>UI: Click "Send" button
+    UI->>Hook: mutateAsync()
+    
+    alt Saved Request
+        Hook->>SA: run(requestId)
+        SA->>DB: Fetch request by ID
+        DB-->>SA: Request data (with JsonValue types)
+        SA->>SA: Parse headers/params (string→object)
+    else Unsaved Request
+        Hook->>SA: runUnsavedRequest(tabData)
+        SA->>SA: Parse headers/params from tab
+    end
+    
+    SA->>SA: Merge default headers
+    SA->>Axios: sendRequest(config)
+    Axios->>API: HTTP Request with headers
+    API-->>Axios: HTTP Response
+    Axios->>Axios: Extract headers safely
+    Axios-->>SA: Response data
+    
+    SA->>DB: Create RequestRun record
+    SA->>SA: Transform data (null→undefined)
+    SA-->>Hook: Response with parsed headers
+    
+    Hook->>Hook: Parse headers if string
+    Hook->>Store: setResponseViewerData(transformed)
+    Store-->>RV: ResponseData
+    RV->>RV: useMemo parse body & filter headers
+    RV->>U: Display response with search
+```
+
+---
+
+## Architecture Decision Records (ADRs)
+
+### ADR-001: Use Object Format for Headers/Parameters
+
+**Context:** Headers and parameters were stored as array of {key, value, enabled} objects.
+
+**Decision:** Convert to object format {key: value} before sending requests.
+
+**Rationale:**
+- Axios expects object format
+- Simpler data structure
+- Matches HTTP spec
+- Easier to merge with defaults
+- Better TypeScript typing
+
+**Consequences:**
+- Need backward compatibility parsing
+- One-time conversion on load
+- Cleaner API layer
+
+### ADR-002: Always Include Default Headers
+
+**Context:** Many APIs require Content-Type and Accept headers.
+
+**Decision:** Automatically include default headers on all requests.
+
+**Rationale:**
+- Reduces repetitive work
+- Prevents common errors
+- User can still override
+- Better UX for beginners
+
+**Default Headers:**
+```typescript
+{
+  'Content-Type': 'application/json; charset=UTF-8',
+  'Accept': 'application/json',
+  'User-Agent': 'PostBoy/1.0',
+}
+```
+
+### ADR-003: Support Unsaved Request Execution
+
+**Context:** Users couldn't test requests without saving to database first.
+
+**Decision:** Create `runUnsavedRequest` function that works with tab data directly.
+
+**Rationale:**
+- Faster prototyping
+- No database clutter
+- Matches Postman behavior
+- Better user experience
+
+**Implementation:**
+- Check if `tab.requestId` exists
+- If yes: use `run(requestId)`
+- If no: use `runUnsavedRequest(tabData)`
+
+### ADR-004: Transform null to undefined for TypeScript
+
+**Context:** Prisma returns `null` for nullable fields, but TypeScript interfaces expect `undefined`.
+
+**Decision:** Transform all `null` values to `undefined` in response data.
+
+**Rationale:**
+- Better TypeScript compatibility
+- Matches React conventions
+- Avoids `null` checks everywhere
+- Cleaner component code
+
+### ADR-005: Use Monaco Editor for Response Display
+
+**Context:** Needed syntax highlighting and code folding for JSON responses.
+
+**Decision:** Integrate Monaco Editor with VS Dark theme.
+
+**Rationale:**
+- Industry standard (VS Code engine)
+- Excellent JSON support
+- Built-in folding
+- Customizable
+- Read-only mode
+
+**Configuration:**
+```typescript
+{
+  readOnly: true,
+  minimap: { enabled: false },
+  fontSize: 13,
+  fontFamily: "var(--font-mono)",
+  wordWrap: "on",
+  automaticLayout: true,
+  padding: { top: 16, bottom: 16 },
+}
+```
+
+---
+
+## Testing Considerations
+
+### Areas Requiring Tests
+
+1. **Data Transformation:**
+   - Headers: string → object → string
+   - Parameters: string → object → string
+   - Body: string → JSON → string
+   - Null → undefined conversion
+
+2. **Error Handling:**
+   - Empty string JSON.parse
+   - Malformed JSON
+   - Network failures
+   - Invalid URLs
+
+3. **Default Headers:**
+   - Merging with user headers
+   - User headers override defaults
+   - Empty headers object
+
+4. **Request Execution:**
+   - Saved requests
+   - Unsaved requests
+   - Missing requestId
+   - Invalid data
+
+### Suggested Test Structure
+
+```typescript
+describe('useRunRequest', () => {
+  it('should execute saved request with requestId', async () => {
+    // ...
+  });
+  
+  it('should execute unsaved request without requestId', async () => {
+    // ...
+  });
+  
+  it('should parse string headers to object', async () => {
+    // ...
+  });
+  
+  it('should handle empty string headers gracefully', async () => {
+    // ...
+  });
+  
+  it('should merge default headers with user headers', async () => {
+    // ...
+  });
+});
+```
+
+---
+
+## Future Enhancements
+
+### Short Term (v2.1)
+- [ ] Remove console.logs after debugging phase
+- [ ] Add unit tests for transformation functions
+- [ ] Implement request history view
+- [ ] Add response time graph
+- [ ] Environment variables support
+
+### Medium Term (v2.5)
+- [ ] GraphQL support
+- [ ] WebSocket testing
+- [ ] Mock server
+- [ ] Team collaboration
+- [ ] API documentation generation
+
+### Long Term (v3.0)
+- [ ] CI/CD integration
+- [ ] Automated testing
+- [ ] Performance monitoring
+- [ ] API versioning
+- [ ] Custom plugins
+
+---
+
+## Conclusion
+
+Version 2.0.0 represents a major overhaul of the request execution and response handling system. Key achievements:
+
+✅ **Reliability:** Robust error handling at every layer  
+✅ **Flexibility:** Support for saved and unsaved requests  
+✅ **Usability:** Default headers, toast notifications, search  
+✅ **Performance:** Memoization, debouncing, optimizations  
+✅ **Type Safety:** Proper transformations and type guards  
+✅ **Developer Experience:** Comprehensive logging and debugging  
+
+The system is now production-ready with a solid foundation for future enhancements.
         Row-level Checks
 ```
 

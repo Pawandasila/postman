@@ -13,11 +13,30 @@ interface Props {
 
 const RequestEditorArea = ({ tab, updateTab }: Props) => {
   
+  // Default headers that will be suggested
+  const DEFAULT_HEADERS = [
+    { key: "Content-Type", value: "application/json; charset=UTF-8", enabled: true },
+    { key: "Accept", value: "application/json", enabled: true },
+  ];
 
   const parseKeyValueData = (jsonString?: string) => {
     if (!jsonString) return [];
     try {
-      return JSON.parse(jsonString);
+      const parsed = JSON.parse(jsonString);
+      
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+      
+      if (typeof parsed === 'object' && parsed !== null) {
+        return Object.entries(parsed).map(([key, value]) => ({
+          key,
+          value: String(value),
+          enabled: true
+        }));
+      }
+      
+      return [];
     } catch {
       return [];
     }
@@ -26,7 +45,11 @@ const RequestEditorArea = ({ tab, updateTab }: Props) => {
 
   const getHeadersData = () => {
     const parsed = parseKeyValueData(tab.headers);
-    return parsed.length > 0 ? parsed : [{ key: "", value: "", enabled: true }];
+    if (parsed.length === 0) {
+      return DEFAULT_HEADERS;
+    }
+    
+    return parsed;
   };
 
 
@@ -47,7 +70,15 @@ const RequestEditorArea = ({ tab, updateTab }: Props) => {
     const filteredHeaders = data.filter((item) => 
       item.enabled !== false && (item.key.trim() || item.value.trim())
     );
-    updateTab(tab.id, { headers: JSON.stringify(filteredHeaders) });
+    
+    const headersObject = filteredHeaders.reduce((acc, item) => {
+      if (item.key.trim()) {
+        acc[item.key.trim()] = item.value;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+    
+    updateTab(tab.id, { headers: JSON.stringify(headersObject) });
     toast.success("Headers updated successfully")
   };
 
@@ -56,7 +87,15 @@ const RequestEditorArea = ({ tab, updateTab }: Props) => {
     const filteredParams = data.filter((item) => 
       item.enabled !== false && (item.key.trim() || item.value.trim())
     );
-    updateTab(tab.id, { parameters: JSON.stringify(filteredParams) });
+    
+    const paramsObject = filteredParams.reduce((acc, item) => {
+      if (item.key.trim()) {
+        acc[item.key.trim()] = item.value;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+    
+    updateTab(tab.id, { parameters: JSON.stringify(paramsObject) });
     toast.success("Parameters updated successfully")
   };
 
