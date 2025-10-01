@@ -28,20 +28,10 @@ const AddRequestModal = ({ isModalOpen, setIsModalOpen }: AddRequestModalProps) 
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  console.log("AddRequestModal render - isModalOpen:", isModalOpen);
-
   const { selectedWorkspace } = useWorkspaceStore();
   const { data: collections, isLoading, isError } = useCollections(selectedWorkspace?.id!);
   const { mutateAsync, isPending } = useAddRequestToCollection(selectedCollectionId);
   const { addTab } = useRequestPlaygroundStore();
-
-  console.log("Modal state:", {
-    isModalOpen,
-    selectedWorkspace: selectedWorkspace?.id,
-    collections: collections?.collections?.length,
-    isLoading,
-    isError
-  });
 
   useEffect(() => {
     if (isModalOpen) {

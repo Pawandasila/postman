@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-// import { ResponseData } from "../components/response-viewer";
+import { ResponseData } from "../components/response-viewer";
 
 interface SavedRequest {
   id: string;
@@ -37,13 +37,13 @@ type PlaygroundState = {
   markUnsaved: (id: string, value: boolean) => void;
   openRequestTab: (req: any) => void; // 👈 new
   updateTabFromSavedRequest: (tabId: string, savedRequest: SavedRequest) => void;
-//   responseViewerData:ResponseData | null;
-//   setResponseViewerData: (data:ResponseData) => void
+  responseViewerData:ResponseData | null;
+  setResponseViewerData: (data:ResponseData) => void
 };
 
 export const useRequestPlaygroundStore = create<PlaygroundState>((set) => ({
   responseViewerData:null,
-//   setResponseViewerData: (data) => set({ responseViewerData: data }),
+  setResponseViewerData: (data) => set({ responseViewerData: data }),
   tabs: [
     {
       id: nanoid(),

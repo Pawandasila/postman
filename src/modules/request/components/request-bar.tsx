@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Send, Loader2, Check, AlertCircle } from "lucide-react";
-// import { useRunRequest } from '../hooks/request'
+import { useRunRequest } from "../hooks/Request";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -26,31 +26,37 @@ const RequestBar = ({ tab, updateTab }: Props) => {
   const [isUrlFocused, setIsUrlFocused] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  //   const {mutateAsync , isPending , isError} = useRunRequest(tab?.requestId!);
-  
-  const requestMethodConfig: Record<string, {
-    text: string;
-    bg: string;
-    border: string;
-    badge: string;
-  }> = {
+  const { mutateAsync, isPending, isError } = useRunRequest(tab);
+
+  const requestMethodConfig: Record<
+    string,
+    {
+      text: string;
+      bg: string;
+      border: string;
+      badge: string;
+    }
+  > = {
     GET: {
       text: "text-green-600 dark:text-green-400",
       bg: "bg-green-500/10 dark:bg-green-500/20",
       border: "border-green-500/30",
-      badge: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
+      badge:
+        "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
     },
     POST: {
       text: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-500/10 dark:bg-blue-500/20",
       border: "border-blue-500/30",
-      badge: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
+      badge:
+        "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
     },
     PUT: {
       text: "text-yellow-600 dark:text-yellow-400",
       bg: "bg-yellow-500/10 dark:bg-yellow-500/20",
       border: "border-yellow-500/30",
-      badge: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
+      badge:
+        "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
     },
     DELETE: {
       text: "text-red-600 dark:text-red-400",
@@ -62,7 +68,8 @@ const RequestBar = ({ tab, updateTab }: Props) => {
       text: "text-orange-600 dark:text-orange-400",
       bg: "bg-orange-500/10 dark:bg-orange-500/20",
       border: "border-orange-500/30",
-      badge: "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
+      badge:
+        "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
     },
   };
 
@@ -77,24 +84,21 @@ const RequestBar = ({ tab, updateTab }: Props) => {
 
   const onSendRequest = async () => {
     if (!isValidUrl) {
-      toast.error('Please enter a valid URL');
+      toast.error("Please enter a valid URL");
       return;
     }
 
     setIsSending(true);
     try {
-      //   const res = await mutateAsync();
-      
-      // Simulate request delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Request sent successfully!', {
+      const res = await mutateAsync();
+
+      toast.success("Request sent successfully!", {
         description: `${tab.method} ${tab.url}`,
         duration: 3000,
       });
     } catch (error) {
-      toast.error('Failed to send request.', {
-        description: 'Please check your network connection and try again.',
+      toast.error("Failed to send request.", {
+        description: "Please check your network connection and try again.",
       });
     } finally {
       setIsSending(false);
@@ -103,9 +107,9 @@ const RequestBar = ({ tab, updateTab }: Props) => {
 
   return (
     <div className="w-full">
-      {/* Request Bar with proper gaps like Postman */}
+      
       <div className="flex items-center gap-2">
-        {/* Method Selector Button */}
+        
         <div className="flex-shrink-0">
           <Select
             value={tab.method}
@@ -169,13 +173,15 @@ const RequestBar = ({ tab, updateTab }: Props) => {
           </Select>
         </div>
 
-        {/* URL Input Field with Border */}
-        <div className={cn(
-          "flex-1 flex items-center gap-2 h-[40px] rounded-lg border-2 bg-background px-4 shadow-sm transition-all duration-200",
-          isUrlFocused 
-            ? "border-primary/60 shadow-md ring-2 ring-primary/20" 
-            : "border-border hover:border-primary/40"
-        )}>
+        
+        <div
+          className={cn(
+            "flex-1 flex items-center gap-2 h-[40px] rounded-lg border-2 bg-background px-4 shadow-sm transition-all duration-200",
+            isUrlFocused
+              ? "border-primary/60 shadow-md ring-2 ring-primary/20"
+              : "border-border hover:border-primary/40"
+          )}
+        >
           <Input
             value={tab.url || ""}
             onChange={(e) => updateTab(tab.id, { url: e.target.value })}
@@ -184,8 +190,8 @@ const RequestBar = ({ tab, updateTab }: Props) => {
             placeholder="Enter URL"
             className="w-full bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60 font-mono text-sm p-1 h-auto"
           />
+
           
-          {/* URL Validation Indicator */}
           {tab.url && (
             <div className="flex-shrink-0">
               {isValidUrl ? (
@@ -197,7 +203,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
           )}
         </div>
 
-        {/* Send Button */}
+        
         <Button
           type="button"
           onClick={onSendRequest}
@@ -223,7 +229,6 @@ const RequestBar = ({ tab, updateTab }: Props) => {
         </Button>
       </div>
 
-      
       {tab.url && !isValidUrl && (
         <div className="flex items-center gap-2 mt-2 px-2 text-xs text-destructive">
           <AlertCircle className="h-3 w-3" />
