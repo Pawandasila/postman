@@ -130,6 +130,7 @@ const RequestEditorArea = ({ tab, updateTab }: Props) => {
           onSubmit={handleBodyChange} 
         />
       </TabsContent>
+      
     </Tabs>
   );
 };

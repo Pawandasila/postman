@@ -14,14 +14,13 @@ export default function RequestEditor() {
 
   return (
    <div className="flex flex-col items-center justify-start h-full w-full bg-background">
-      {/* Enhanced Header Section with gradient background */}
+
       <div className="w-full bg-gradient-to-br from-card via-card to-muted/30 border-b border-border shadow-md">
         <div className="px-6 py-5">
           <RequestBar tab={activeTab} updateTab={updateTab} />
         </div>
       </div>
 
-      {/* Main Content Area with better spacing */}
       <div className="flex-1 w-full overflow-y-auto bg-background">
         <div className="px-6 py-6">
           <div className="mb-6">

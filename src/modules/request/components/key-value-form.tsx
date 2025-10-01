@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useCallback } from "react";
-import { useForm, useFieldArray, Control } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -97,8 +96,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
     }
   };
 
-  // Autosave on changes with debounce
-  // We'll serialize the filtered items and only call onSubmit when it changes.
   const lastSavedRef = useRef<string | null>(null);
 
   const getFilteredItemsFromValues = (items: KeyValueItem[]) =>
@@ -108,7 +105,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
       )
       .map(({ key, value }) => ({ key, value }));
 
-  // Simple debounce implementation
   const debounce = (fn: (...args: any[]) => void, wait = 500) => {
     let t: ReturnType<typeof setTimeout> | null = null;
     return (...args: any[]) => {
@@ -130,7 +126,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
   );
 
   const debouncedSaveRef = useRef(saveIfChanged);
-  // keep ref up to date when saveIfChanged changes
   useEffect(() => {
     debouncedSaveRef.current = saveIfChanged;
   }, [saveIfChanged]);
@@ -144,7 +139,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
     }, 500);
   }, []);
 
-  // Watch form values and trigger debounced save
   useEffect(() => {
     const subscription = form.watch((value) => {
       const items = (value as KeyValueFormData)?.items || [];
@@ -183,7 +177,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
             </div>
           </div>
 
-          {/* Enhanced Form Fields */}
+          
           <div className="space-y-3">
             {fields.map((field, index) => (
               <div
@@ -195,7 +189,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                     : "bg-muted/30 border-border/50 opacity-60 hover:opacity-80"
                 )}
               >
-                {/* Enhanced Key Input */}
+                
                 <div className="col-span-5">
                   <FormField
                     control={form.control}
@@ -216,7 +210,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                   />
                 </div>
 
-                {/* Enhanced Value Input */}
+                
                 <div className="col-span-5">
                   <FormField
                     control={form.control}
@@ -269,7 +263,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                     )}
                   />
                 </div>
-                {/* Enhanced Remove Button */}
+                
                 <div className="col-span-1 flex items-center justify-center">
                   <Button
                     type="button"
@@ -291,7 +285,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
             ))}
           </div>
 
-          {/* Enhanced Autosave indicator */}
+          
           <div className="flex justify-between items-center pt-4 border-t border-border">
             <span className="text-xs text-muted-foreground flex items-center gap-2 font-medium">
               <span className="relative flex h-2 w-2">

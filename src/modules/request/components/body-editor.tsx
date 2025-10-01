@@ -77,12 +77,10 @@ const BodyEditor: React.FC<BodyEditorProps> = ({
   const contentType = form.watch('contentType')
   const bodyValue = form.watch('body')
 
-  // Handle editor value changes
   const handleEditorChange = (value?: string) => {
     form.setValue('body', value || '', { shouldValidate: true })
   }
 
-  // Handle copy
   const handleCopy = async () => {
     if (bodyValue) {
       try {

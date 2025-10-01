@@ -4,12 +4,25 @@ import { useRequestPlaygroundStore } from "../store/useRequestStore";
 
 export const useAddRequestToCollection = (collectionId: string) => {
     const queryClient = useQueryClient();
+    const {updateTabFromSavedRequest, activeTabId} = useRequestPlaygroundStore();
 
     return useMutation({
         mutationFn: async (request: Request) => addRequestToCollection(request, collectionId),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['requests', collectionId] });
             queryClient.invalidateQueries({ queryKey: ['collections'] });
+
+            const savedRequest = {
+                id: data.id,
+                name: data.name,
+                method: data.method,
+                url: data.url,
+                body: typeof data.body === 'string' ? data.body : undefined,
+                headers: typeof data.headers === 'string' ? data.headers : undefined,
+                parameters: typeof data.parameters === 'string' ? data.parameters : undefined,
+            };
+            updateTabFromSavedRequest(activeTabId!, savedRequest);
+            
             console.log('Request added:', data);
         }
     });
@@ -24,6 +37,7 @@ export const useGetAllRequestsInCollection = (collectionId: string) => {
 }
 
 export const useSaveRequest = (requestId: string) => {
+    const {updateTabFromSavedRequest, activeTabId} = useRequestPlaygroundStore();
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -31,6 +45,18 @@ export const useSaveRequest = (requestId: string) => {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['requests'] });
             queryClient.invalidateQueries({ queryKey: ['collections'] });
+            
+            const savedRequest = {
+                id: data.id,
+                name: data.name,
+                method: data.method,
+                url: data.url,
+                body: typeof data.body === 'string' ? data.body : undefined,
+                headers: typeof data.headers === 'string' ? data.headers : undefined,
+                parameters: typeof data.parameters === 'string' ? data.parameters : undefined,
+            };
+            
+            updateTabFromSavedRequest(activeTabId!, savedRequest);
             console.log('Request saved:', data);
         }
     });
