@@ -22,7 +22,12 @@ export const createCollection = async (workspaceId: string, name: string) => {
 export const getCollections = async (workspaceId: string) => {
     const collections = await db.collection.findMany({
         where: { workspaceId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+            _count: {
+                select: { requests: true }
+            }
+        }
     })
 
     return {
