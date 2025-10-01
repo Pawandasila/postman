@@ -16,7 +16,7 @@ import { useSaveRequest } from "../hooks/Request";
 import Image from "next/image";
 
 export default function PlaygroundPage() {
-  const { tabs, activeTabId, addTab } = useRequestPlaygroundStore();
+  const { tabs, activeTabId } = useRequestPlaygroundStore();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
