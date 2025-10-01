@@ -27,6 +27,7 @@ import EditRequestModal from "@/modules/request/components/edit-request";
 import DeleteRequestModal from "@/modules/request/components/delete-request";
 import { useGetAllRequestsInCollection } from "@/modules/request/hooks/Request";
 import { REST_METHOD } from "@prisma/client";
+import { useRequestPlaygroundStore } from "@/modules/request/store/useRequestStore";
 
 interface Props {
   collection: {
@@ -43,9 +44,9 @@ const CollectionFolder = ({ collection }: Props) => {
   const [isAddRequestOpen, setIsAddRequestOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  
+
   const folderRef = useRef<HTMLDivElement>(null);
-  
+
   const [isEditRequestOpen, setIsEditRequestOpen] = useState(false);
   const [isDeleteRequestOpen, setIsDeleteRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<{
@@ -66,30 +67,32 @@ const CollectionFolder = ({ collection }: Props) => {
     [REST_METHOD.POST]: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     [REST_METHOD.PUT]: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
     [REST_METHOD.DELETE]: "bg-red-500/10 text-red-600 dark:text-red-400",
-    [REST_METHOD.PATCH]: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    [REST_METHOD.PATCH]:
+      "bg-orange-500/10 text-orange-600 dark:text-orange-400",
   };
 
   const hasRequests = requests && requests.length > 0;
 
+  const { openRequestTab } = useRequestPlaygroundStore();
+
   // Keyboard shortcuts handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-  
       if (!isFocused) return;
 
       const isModifierKey = e.metaKey || e.ctrlKey;
-      
+
       if (isModifierKey) {
         switch (e.key.toLowerCase()) {
-          case 'r':
+          case "r":
             e.preventDefault();
             setIsAddRequestOpen(true);
             break;
-          case 'e':
+          case "e":
             e.preventDefault();
             setIsEditOpen(true);
             break;
-          case 'd':
+          case "d":
             e.preventDefault();
             setIsDeleteOpen(true);
             break;
@@ -98,11 +101,11 @@ const CollectionFolder = ({ collection }: Props) => {
     };
 
     if (isFocused) {
-      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener("keydown", handleKeyDown);
     }
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isFocused]);
 
@@ -114,14 +117,13 @@ const CollectionFolder = ({ collection }: Props) => {
         className="w-full"
       >
         <div className="flex flex-col w-full">
-          
-          <div 
+          <div
             ref={folderRef}
             tabIndex={0}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className={`flex flex-row justify-between items-center p-2 flex-1 w-full hover:bg-accent rounded-md group transition-colors outline-none ${
-              isFocused ? 'ring-2 ring-primary/50 bg-accent/50' : ''
+              isFocused ? "ring-2 ring-primary/50 bg-accent/50" : ""
             }`}
           >
             <CollapsibleTrigger className="flex flex-row justify-start items-center space-x-2 flex-1">
@@ -133,7 +135,7 @@ const CollectionFolder = ({ collection }: Props) => {
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   )
                 ) : (
-                  <div className="w-4 h-4" /> 
+                  <div className="w-4 h-4" />
                 )}
                 <Folder className="w-4 h-4 text-primary" />
               </div>
@@ -214,7 +216,6 @@ const CollectionFolder = ({ collection }: Props) => {
             </div>
           </div>
 
-          
           <CollapsibleContent className="w-full">
             {isPending ? (
               <div className="pl-7 py-2">
@@ -236,10 +237,7 @@ const CollectionFolder = ({ collection }: Props) => {
                 {requests.map((request: any) => (
                   <div
                     key={request.id}
-                    onClick={() => {
-                      
-                      console.log("Open request:", request.id);
-                    }}
+                    onClick={() => openRequestTab(request)}
                     className="flex items-center justify-between py-1.5 px-2 hover:bg-accent/50 rounded-md cursor-pointer group/request transition-colors"
                   >
                     <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -324,7 +322,6 @@ const CollectionFolder = ({ collection }: Props) => {
         </div>
       </Collapsible>
 
-      
       <SaveRequestToCollectionModal
         isModalOpen={isAddRequestOpen}
         setIsModalOpen={setIsAddRequestOpen}

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TabbedSidebar from "@/modules/Workspace/components/Sidebar";
 import { useCollections } from "@/modules/collections/hooks/collection";
 import SaveRequestToCollectionModal from "@/modules/collections/components/add-requests";
+import PlaygroundPage from "@/modules/request/components/request-playground";
 import { useState } from "react";
 
 const Page = () => {
@@ -22,6 +23,7 @@ const Page = () => {
   const { data: currentWorkspace, isLoading } = useGetWorkspace(selectedWorkspace?.id!);
   const { data: collectionsResponse } = useCollections(selectedWorkspace?.id!);
   const [isAddRequestOpen, setIsAddRequestOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const collections = collectionsResponse?.success ? collectionsResponse.collections : [];
   
@@ -61,56 +63,69 @@ const Page = () => {
       
       <ResizablePanel defaultSize={55} minSize={40}>
         <div className="flex flex-col h-full">
-          <div className="flex-1 flex items-center justify-center p-8">
-            <Card className="max-w-2xl w-full">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Send className="h-8 w-8 text-primary" />
-                  </div>
-                </div>
-                <CardTitle className="text-2xl">Welcome to {currentWorkspace.name}</CardTitle>
-                <CardDescription className="text-base">
-                  {currentWorkspace.description || "Start building and testing your APIs"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <Button className="w-full" size="lg" onClick={() => setIsAddRequestOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Request
-                  </Button>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline">
-                      <FolderOpen className="h-4 w-4 mr-2" />
-                      New Collection
-                    </Button>
-                    <Button variant="outline">
-                      Import Collection
-                    </Button>
-                  </div>
-                </div>
-                
-                
-                <div className="mt-6 pt-6 border-t">
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="group cursor-default">
-                      <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
-                        {collections?.length || 0}
-                      </div>
-                      <div className="text-xs text-muted-foreground font-medium">Collections</div>
-                    </div>
-                    <div className="group cursor-default">
-                      <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
-                        {totalRequests}
-                      </div>
-                      <div className="text-xs text-muted-foreground font-medium">Requests</div>
+          {showWelcome ? (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <Card className="max-w-2xl w-full">
+                <CardHeader className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Send className="h-8 w-8 text-primary" />
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  <CardTitle className="text-2xl">Welcome to {currentWorkspace.name}</CardTitle>
+                  <CardDescription className="text-base">
+                    {currentWorkspace.description || "Start building and testing your APIs"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <Button 
+                      className="w-full" 
+                      size="lg" 
+                      onClick={() => {
+                        setShowWelcome(false);
+                        setIsAddRequestOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Request
+                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline">
+                        <FolderOpen className="h-4 w-4 mr-2" />
+                        New Collection
+                      </Button>
+                      <Button variant="outline">
+                        Import Collection
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div className="group cursor-default">
+                        <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
+                          {collections?.length || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-medium">Collections</div>
+                      </div>
+                      <div className="group cursor-default">
+                        <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
+                          {totalRequests}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-medium">Requests</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="flex-1 h-full">
+              <PlaygroundPage />
+            </div>
+          )}
         </div>
       </ResizablePanel>
 
