@@ -14,13 +14,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TabbedSidebar from "@/modules/Workspace/components/Sidebar";
 import { useCollections } from "@/modules/collections/hooks/collection";
+import SaveRequestToCollectionModal from "@/modules/collections/components/add-requests";
+import { useState } from "react";
 
 const Page = () => {
   const { selectedWorkspace } = useWorkspaceStore();
   const { data: currentWorkspace, isLoading } = useGetWorkspace(selectedWorkspace?.id!);
   const { data: collectionsResponse } = useCollections(selectedWorkspace?.id!);
+  const [isAddRequestOpen, setIsAddRequestOpen] = useState(false);
 
   const collections = collectionsResponse?.success ? collectionsResponse.collections : [];
+  
+  const totalRequests = collections?.reduce((total, collection) => {
+
+    return total + (collection._count?.requests || 0);
+  }, 0) || 0;
 
   if (isLoading) {
     return (
@@ -68,7 +76,7 @@ const Page = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={() => setIsAddRequestOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     New Request
                   </Button>
@@ -86,15 +94,17 @@ const Page = () => {
                 
                 <div className="mt-6 pt-6 border-t">
                   <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-primary">
+                    <div className="group cursor-default">
+                      <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
                         {collections?.length || 0}
                       </div>
-                      <div className="text-xs text-muted-foreground">Collections</div>
+                      <div className="text-xs text-muted-foreground font-medium">Collections</div>
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold text-primary">0</div>
-                      <div className="text-xs text-muted-foreground">Requests</div>
+                    <div className="group cursor-default">
+                      <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
+                        {totalRequests}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium">Requests</div>
                     </div>
                   </div>
                 </div>
@@ -153,6 +163,11 @@ const Page = () => {
           </Tabs>
         </div>
       </ResizablePanel>
+
+      <SaveRequestToCollectionModal
+        isModalOpen={isAddRequestOpen}
+        setIsModalOpen={setIsAddRequestOpen}
+      />
     </ResizablePanelGroup>
   );
 };
