@@ -37,7 +37,7 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{currentWorkspace?.name}</span>
-                <span className="text-muted-foreground">›</span>
+                <span className="text-muted-foreground">&rsaquo;</span>
                 <h2 className="text-sm font-semibold">Collections</h2>
               </div>
               <Tooltip>
@@ -107,7 +107,7 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
             <div className="p-4 border-b">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{currentWorkspace?.name}</span>
-                <span className="text-muted-foreground">›</span>
+                <span className="text-muted-foreground">&rsaquo;</span>
                 <h2 className="text-sm font-semibold">History</h2>
               </div>
             </div>
@@ -127,7 +127,7 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
             <div className="p-4 border-b">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{currentWorkspace?.name}</span>
-                <span className="text-muted-foreground">›</span>
+                <span className="text-muted-foreground">&rsaquo;</span>
                 <h2 className="text-sm font-semibold">Share</h2>
               </div>
             </div>
@@ -147,7 +147,7 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
             <div className="p-4 border-b">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{currentWorkspace?.name}</span>
-                <span className="text-muted-foreground">›</span>
+                <span className="text-muted-foreground">&rsaquo;</span>
                 <h2 className="text-sm font-semibold">Code Snippets</h2>
               </div>
             </div>

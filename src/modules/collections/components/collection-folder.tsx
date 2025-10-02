@@ -6,6 +6,7 @@ import {
   Edit,
   ChevronDown,
   ChevronRight,
+  Shield,
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -19,6 +20,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 import EditCollectionModal from "./edit-collection";
 import DeleteCollectionModal from "./delete-collection";
@@ -28,6 +30,8 @@ import DeleteRequestModal from "@/modules/request/components/delete-request";
 import { useGetAllRequestsInCollection } from "@/modules/request/hooks/Request";
 import { REST_METHOD } from "@prisma/client";
 import { useRequestPlaygroundStore } from "@/modules/request/store/useRequestStore";
+import { useWorkspaceStore } from "@/modules/Layout/Store";
+import { useUserWorkspacePermissions } from "@/hooks/use-workspace-permissions";
 
 interface Props {
   collection: {
@@ -46,6 +50,12 @@ const CollectionFolder = ({ collection }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
 
   const folderRef = useRef<HTMLDivElement>(null);
+  
+  // Get workspace context to check user permissions
+  const { selectedWorkspace } = useWorkspaceStore();
+  
+  // Get user permissions for the workspace
+  const { data: userPermissions } = useUserWorkspacePermissions(collection.workspaceId);
 
   const [isEditRequestOpen, setIsEditRequestOpen] = useState(false);
   const [isDeleteRequestOpen, setIsDeleteRequestOpen] = useState(false);
@@ -155,6 +165,17 @@ const CollectionFolder = ({ collection }: Props) => {
             </CollapsibleTrigger>
 
             <div className="flex flex-row justify-center items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              
+              {userPermissions?.success && userPermissions?.role && (
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs px-1.5 py-0.5 h-5 bg-primary/10 text-primary border-primary/20 font-medium"
+                >
+                  <Shield className="w-2.5 h-2.5 mr-1" />
+                  {userPermissions.role.toLowerCase()}
+                </Badge>
+              )}
+              
               <button
                 className="p-1 hover:bg-accent rounded"
                 onClick={(e) => {

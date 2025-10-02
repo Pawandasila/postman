@@ -127,4 +127,3 @@ export async function getWorkspaceById(workspaceId: string) {
 
   return workspace;
 }
-
