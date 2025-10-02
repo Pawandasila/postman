@@ -60,7 +60,7 @@ export default function UserButton({
 
   useEffect(() => {
     setMounted(true);
-  }, [user]);
+  }, []);
 
   const handleThemeToggle = useCallback(() => {
     const newMode: Mode = settings.mode === "dark" ? "light" : "dark";
@@ -137,6 +137,62 @@ export default function UserButton({
   
   if (!user) {
     return null;
+  }
+
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        className={`relative flex items-center gap-2 ${
+          size === "sm"
+            ? "h-9 px-2"
+            : size === "lg"
+            ? "h-12 px-3"
+            : "h-10 px-2"
+        } rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border`}
+        disabled
+      >
+        <div
+          className={`${avatarSizes[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center`}
+        >
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt={user.name || "User avatar"}
+              fill
+              className="object-cover"
+              priority
+            />
+          ) : (
+            <span className="text-primary-foreground font-semibold text-sm">
+              {getUserInitials(user.name, user.email)}
+            </span>
+          )}
+        </div>
+
+        <div className="hidden md:flex flex-col items-start">
+          <span className="text-sm font-medium leading-none">
+            {user.name || "User"}
+          </span>
+          {showEmail && user.email && (
+            <span className="text-xs text-muted-foreground leading-none mt-0.5">
+              {user.email.length > 20
+                ? `${user.email.slice(0, 20)}...`
+                : user.email}
+            </span>
+          )}
+        </div>
+
+        {showBadge && (
+          <Badge
+            variant={badgeVariant}
+            className="absolute -top-1 -right-1 h-5 px-1.5 text-[10px] font-semibold"
+          >
+            {badgeText}
+          </Badge>
+        )}
+      </Button>
+    );
   }
 
   return (
@@ -298,23 +354,21 @@ export default function UserButton({
 
         <DropdownMenuSeparator className="my-2" />
 
-        {/* Theme Toggle */}
-        {mounted && (
-          <div className="px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Theme</span>
-              <ThemeToggleButton
-                theme={
-                  settings.mode === "system"
-                    ? "light"
-                    : (settings.mode as "light" | "dark")
-                }
-                onClick={handleThemeToggle}
-                variant="polygon"
-              />
-            </div>
+        
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Theme</span>
+            <ThemeToggleButton
+              theme={
+                settings.mode === "system"
+                  ? "light"
+                  : (settings.mode as "light" | "dark")
+              }
+              onClick={handleThemeToggle}
+              variant="polygon"
+            />
           </div>
-        )}
+        </div>
 
         <DropdownMenuSeparator className="my-2" />
 
