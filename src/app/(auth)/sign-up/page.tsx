@@ -3,36 +3,42 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import Link from "next/link";
 import Image from "next/image";
-import { signIn } from "@/lib/auth-client";
+import { signIn, signUp } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useRouter } from "next/navigation";
 
-const signInSchema = z.object({
+const signUpSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  remember: z.boolean(),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-type SignInFormValues = z.infer<typeof signInSchema>;
+type SignUpFormValues = z.infer<typeof signUpSchema>;
 
-const SignInPage = () => {
+const SignUpPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
+  const router = useRouter();
 
-  const form = useForm<SignInFormValues>({
-    resolver: zodResolver(signInSchema),
+  const form = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
-      remember: false,
+      confirmPassword: "",
     },
   });
 
@@ -64,23 +70,25 @@ const SignInPage = () => {
     }
   };
 
-  const onSubmit = async (data: SignInFormValues) => {
+  const onSubmit = async (data: SignUpFormValues) => {
     try {
-      const result = await signIn.email({
+      const result = await signUp.email({
         email: data.email,
         password: data.password,
+        name: data.name,
         callbackURL: "/",
       });
 
       if (result.error) {
-        toast.error(result.error.message || "Invalid email or password");
+        toast.error(result.error.message || "Failed to create account");
         return;
       }
 
-      toast.success("Successfully signed in!");
+      toast.success("Account created successfully!");
+      router.push("/");
     } catch (error) {
-      console.error("Sign in error:", error);
-      toast.error("Invalid email or password");
+      console.error("Sign up error:", error);
+      toast.error("Failed to create account. Please try again.");
     }
   };
 
@@ -98,14 +106,14 @@ const SignInPage = () => {
 
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">
-          Login to your Account
+          Create your Account
         </h1>
         <p className="text-sm text-muted-foreground">
-          See what is going on with your business
+          Get started with PostBoy today
         </p>
       </div>
 
-      
+      {/* Social Sign Up */}
       <div className="grid grid-cols-2 gap-4">
         <Button
           variant="outline"
@@ -163,14 +171,33 @@ const SignInPage = () => {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            or Sign in with Email
+            or Sign up with Email
           </span>
         </div>
       </div>
 
-      
+      {/* Sign Up Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    placeholder="John Doe"
+                    {...field}
+                    disabled={form.formState.isSubmitting}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="email"
@@ -209,35 +236,26 @@ const SignInPage = () => {
             )}
           />
 
-          {/* Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between">
-            <FormField
-              control={form.control}
-              name="remember"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={form.formState.isSubmitting}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm text-muted-foreground cursor-pointer font-normal">
-                    Remember Me
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary hover:underline"
-            >
-              Forgot Password?
-            </Link>
-          </div>
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    {...field}
+                    disabled={form.formState.isSubmitting}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          {/* Login Button */}
+          {/* Sign Up Button */}
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90"
@@ -246,26 +264,26 @@ const SignInPage = () => {
             {form.formState.isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Signing in...
+                Creating account...
               </>
             ) : (
-              "Login"
+              "Create Account"
             )}
           </Button>
         </form>
       </Form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Not Registered Yet?{" "}
+        Already have an account?{" "}
         <Link
-          href="/sign-up"
+          href="/sign-in"
           className="text-primary font-medium hover:underline"
         >
-          Create an account
+          Sign in
         </Link>
       </p>
     </div>
   );
 };
 
-export default SignInPage;
+export default SignUpPage;

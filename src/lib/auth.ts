@@ -8,6 +8,11 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false, // Set to true if you want email verification
+  },
+
   socialProviders: {
     github: {
       clientId: env.GITHUB_CLIENT_ID,
