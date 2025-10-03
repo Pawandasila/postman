@@ -7,7 +7,7 @@ import { Sparkles, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// import { useSuggestRequestName } from "@/modules/ai/hooks/ai-suggestion";
+import { useSuggestRequestName } from "@/modules/ai/hooks/aisuggestion";
 
 const AddNameModal = ({
   isModalOpen,
@@ -19,7 +19,7 @@ const AddNameModal = ({
   tabId: string;
 }) => {
   const { updateTab, tabs, markUnsaved } = useRequestPlaygroundStore();
-//   const {mutateAsync , data , isPending , isError} = useSuggestRequestName();
+  const { mutateAsync, data, isPending, isError } = useSuggestRequestName();
   const tab = tabs.find((t) => t.id === tabId);
 
   const [name, setName] = useState(tab?.title || "");
@@ -80,26 +80,32 @@ const AddNameModal = ({
               size="icon" 
               className="shrink-0 border-primary/30 hover:border-primary/50 hover:bg-primary/10 transition-all"
               title="Generate name suggestions with AI"
-            //   onClick={async () => {
-            //     if (!tab) return;
-            //     try {
-            //       const result = await mutateAsync({
-            //         workspaceName: tab.workspaceId || "Default Workspace",
-            //         method: (tab.method as "GET" | "POST" | "PUT" | "PATCH" | "DELETE") || "GET",
-            //         url: tab.url || "",
-            //         description: `Request in collection ${tab.collectionId || ""}`
-            //       });
+              onClick={async () => {
+                if (!tab) return;
+                try {
                   
-            //       if (result.suggestions && result.suggestions.length > 0) {
-            //         setSuggestions(result.suggestions);
-            //         setName(result.suggestions[0].name);
-            //         toast.success("Generated name suggestions");
-            //       }
-            //     } catch (error) {
-            //       toast.error("Failed to generate name suggestions");
-            //     }
-            //   }} 
-            //   disabled={isPending}
+                  const result = await mutateAsync({
+                    workspaceName: tab.workspaceId || "Default Workspace",
+                    method: (tab.method as "GET" | "POST" | "PUT" | "PATCH" | "DELETE") || "GET",
+                    url: tab.url || "",
+                    description: `Request in collection ${tab.collectionId || ""}`
+                  });
+                  
+                  
+                  if (result.suggestions && result.suggestions.length > 0) {
+                    setSuggestions(result.suggestions);
+                    setName(result.suggestions[0].name);
+                    toast.success("Generated name suggestions");
+                  } else {
+                    console.warn('⚠️ No suggestions in result');
+                    toast.warning("No suggestions generated");
+                  }
+                } catch (error) {
+                  console.error('❌ Error:', error);
+                  toast.error("Failed to generate name suggestions");
+                }
+              }} 
+              disabled={isPending}
             >
               <Sparkles className="h-4 w-4 text-primary" />
             </Button>

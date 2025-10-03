@@ -68,3 +68,28 @@ export const updateCollection = async (id: string, name: string) => {
         collection
     }
 }
+
+export const getCollectionsWithRequests = async (workspaceId: string) => {
+    const collections = await db.collection.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+            requests: {
+                select: {
+                    id: true,
+                    name: true,
+                    method: true,
+                    url: true
+                }
+            },
+            _count: {
+                select: { requests: true }
+            }
+        }
+    })
+
+    return {
+        success: true,
+        collections
+    }
+}

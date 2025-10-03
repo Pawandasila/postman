@@ -16,6 +16,9 @@ import { Send, Loader2, Check, AlertCircle } from "lucide-react";
 import { useRunRequest } from "../hooks/Request";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { saveRequestToHistory } from "@/modules/history/action/save-history";
+import { useWorkspaceStore } from "@/modules/Layout/Store";
+import { useHistoryStore } from "@/modules/history/store/useHistoryStore";
 
 interface Props {
   tab: RequestTab;
@@ -25,6 +28,8 @@ interface Props {
 const RequestBar = ({ tab, updateTab }: Props) => {
   const [isUrlFocused, setIsUrlFocused] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const { selectedWorkspace } = useWorkspaceStore();
+  const { triggerRefetch } = useHistoryStore();
 
   const { mutateAsync, isPending, isError } = useRunRequest(tab);
 
@@ -89,8 +94,51 @@ const RequestBar = ({ tab, updateTab }: Props) => {
     }
 
     setIsSending(true);
+    const startTime = Date.now();
+
     try {
       const res = await mutateAsync();
+      const responseTime = Date.now() - startTime;
+
+      if (selectedWorkspace && res?.success && res.requestRun) {
+        try {
+          const parseJsonSafely = (data: any): any => {
+            if (!data) return undefined;
+            if (typeof data === "string") {
+              try {
+                return JSON.parse(data);
+              } catch {
+                return undefined;
+              }
+            }
+            return data;
+          };
+
+          const result = await saveRequestToHistory({
+            workspaceId: selectedWorkspace.id,
+            workspaceName: selectedWorkspace.name,
+            collectionId: tab.collectionId,
+            requestId: tab.requestId,
+            requestName: tab.title || "Untitled Request",
+            method: tab.method,
+            url: tab.url || "",
+            statusCode: res.requestRun.status,
+            statusText: res.requestRun.statusText || undefined,
+            responseTime,
+            responseSize: res.requestRun.body ? res.requestRun.body.length : 0,
+            headers: parseJsonSafely(tab.headers),
+            params: parseJsonSafely(tab.parameters),
+            body: parseJsonSafely(tab.body),
+            response: parseJsonSafely(res.requestRun.body),
+          });
+
+          if (result.success) {
+            triggerRefetch();
+          }
+        } catch (historyError) {
+          console.error("Failed to save history:", historyError);
+        }
+      }
 
       toast.success("Request sent successfully!", {
         description: `${tab.method} ${tab.url}`,
@@ -107,9 +155,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
 
   return (
     <div className="w-full">
-      
       <div className="flex items-center gap-2">
-        
         <div className="flex-shrink-0">
           <Select
             value={tab.method}
@@ -173,7 +219,6 @@ const RequestBar = ({ tab, updateTab }: Props) => {
           </Select>
         </div>
 
-        
         <div
           className={cn(
             "flex-1 flex items-center gap-2 h-[40px] rounded-lg border-2 bg-background px-4 shadow-sm transition-all duration-200",
@@ -191,7 +236,6 @@ const RequestBar = ({ tab, updateTab }: Props) => {
             className="w-full bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60 font-mono text-sm p-1 h-auto"
           />
 
-          
           {tab.url && (
             <div className="flex-shrink-0">
               {isValidUrl ? (
@@ -203,7 +247,6 @@ const RequestBar = ({ tab, updateTab }: Props) => {
           )}
         </div>
 
-        
         <Button
           type="button"
           onClick={onSendRequest}
