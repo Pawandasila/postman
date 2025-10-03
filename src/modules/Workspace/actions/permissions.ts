@@ -1,24 +1,15 @@
-/**
- * Enhanced workspace actions with permission checking
- */
-
 "use server";
 
 import db from "@/lib/db";
 import { currentUser } from "@/modules/Authentication/actions";
 import { MEMBER_ROLE } from "@prisma/client";
-import { 
-  requirePermission, 
-  requireRole, 
+import {
+  requirePermission,
   requireOwnership,
-  checkWorkspacePermission,
-  getWorkspaceWithPermissions 
+  getWorkspaceWithPermissions,
 } from "@/lib/workspace-permissions";
 import { PERMISSIONS } from "@/lib/permissions";
 
-/**
- * Get workspace with user permissions (enhanced version)
- */
 export async function getWorkspaceWithUserPermissions(workspaceId: string) {
   try {
     return await getWorkspaceWithPermissions(workspaceId);
@@ -26,20 +17,17 @@ export async function getWorkspaceWithUserPermissions(workspaceId: string) {
     console.error("Error getting workspace with permissions:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to get workspace",
+      message:
+        error instanceof Error ? error.message : "Failed to get workspace",
     };
   }
 }
 
-/**
- * Update workspace (requires WORKSPACE_EDIT permission)
- */
 export async function updateWorkspace(
   workspaceId: string,
   data: { name?: string; description?: string }
 ) {
   try {
-    // Check permission
     await requirePermission(PERMISSIONS.WORKSPACE_EDIT)(workspaceId);
 
     const workspace = await db.workspace.update({
@@ -55,17 +43,14 @@ export async function updateWorkspace(
     console.error("Error updating workspace:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to update workspace",
+      message:
+        error instanceof Error ? error.message : "Failed to update workspace",
     };
   }
 }
 
-/**
- * Delete workspace (requires ownership)
- */
 export async function deleteWorkspace(workspaceId: string) {
   try {
-    // Only owner can delete workspace
     await requireOwnership(workspaceId);
 
     await db.workspace.delete({
@@ -80,29 +65,24 @@ export async function deleteWorkspace(workspaceId: string) {
     console.error("Error deleting workspace:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to delete workspace",
+      message:
+        error instanceof Error ? error.message : "Failed to delete workspace",
     };
   }
 }
 
-/**
- * Invite member to workspace (requires WORKSPACE_INVITE_MEMBERS permission)
- */
 export async function inviteMemberToWorkspace(
   workspaceId: string,
   email: string,
   role: MEMBER_ROLE = MEMBER_ROLE.VIEWER
 ) {
   try {
-    // Check permission
     await requirePermission(PERMISSIONS.WORKSPACE_INVITE_MEMBERS)(workspaceId);
 
-    // Generate invite (reuse existing logic)
-    const { generateWorkspaceInvite } = await import("@/modules/invites/actions");
+    const { generateWorkspaceInvite } = await import(
+      "@/modules/invites/actions"
+    );
     const inviteUrl = await generateWorkspaceInvite(workspaceId);
-
-    // In a real app, you'd send an email here
-    // For now, just return the invite URL
 
     return {
       success: true,
@@ -113,14 +93,12 @@ export async function inviteMemberToWorkspace(
     console.error("Error inviting member:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to invite member",
+      message:
+        error instanceof Error ? error.message : "Failed to invite member",
     };
   }
 }
 
-/**
- * Update member role (requires WORKSPACE_CHANGE_ROLES permission)
- */
 export async function updateMemberRole(
   workspaceId: string,
   userId: string,
@@ -132,10 +110,8 @@ export async function updateMemberRole(
       throw new Error("User not authenticated");
     }
 
-    // Check permission
     await requirePermission(PERMISSIONS.WORKSPACE_CHANGE_ROLES)(workspaceId);
 
-    // Cannot change owner's role
     const workspace = await db.workspace.findUnique({
       where: { id: workspaceId },
       select: { ownerId: true },
@@ -145,7 +121,6 @@ export async function updateMemberRole(
       throw new Error("Cannot change workspace owner's role");
     }
 
-    // Cannot change your own role (prevents privilege escalation)
     if (userId === user.id) {
       throw new Error("Cannot change your own role");
     }
@@ -184,9 +159,6 @@ export async function updateMemberRole(
   }
 }
 
-/**
- * Remove member from workspace (requires WORKSPACE_REMOVE_MEMBERS permission)
- */
 export async function removeMemberFromWorkspace(
   workspaceId: string,
   userId: string
@@ -197,10 +169,8 @@ export async function removeMemberFromWorkspace(
       throw new Error("User not authenticated");
     }
 
-    // Check permission
     await requirePermission(PERMISSIONS.WORKSPACE_REMOVE_MEMBERS)(workspaceId);
 
-    // Cannot remove workspace owner
     const workspace = await db.workspace.findUnique({
       where: { id: workspaceId },
       select: { ownerId: true },
@@ -210,7 +180,6 @@ export async function removeMemberFromWorkspace(
       throw new Error("Cannot remove workspace owner");
     }
 
-    // Cannot remove yourself (use leave workspace instead)
     if (userId === user.id) {
       throw new Error("Cannot remove yourself. Use leave workspace instead.");
     }
@@ -232,14 +201,12 @@ export async function removeMemberFromWorkspace(
     console.error("Error removing member:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to remove member",
+      message:
+        error instanceof Error ? error.message : "Failed to remove member",
     };
   }
 }
 
-/**
- * Leave workspace (anyone can leave, except owner)
- */
 export async function leaveWorkspace(workspaceId: string) {
   try {
     const user = await currentUser();
@@ -247,7 +214,6 @@ export async function leaveWorkspace(workspaceId: string) {
       throw new Error("User not authenticated");
     }
 
-    // Check if user is a member
     const member = await db.workspaceMember.findUnique({
       where: {
         userId_workspaceId: {
@@ -261,14 +227,15 @@ export async function leaveWorkspace(workspaceId: string) {
       throw new Error("You are not a member of this workspace");
     }
 
-    // Check if user is owner
     const workspace = await db.workspace.findUnique({
       where: { id: workspaceId },
       select: { ownerId: true },
     });
 
     if (workspace?.ownerId === user.id) {
-      throw new Error("Workspace owner cannot leave. Transfer ownership or delete workspace instead.");
+      throw new Error(
+        "Workspace owner cannot leave. Transfer ownership or delete workspace instead."
+      );
     }
 
     await db.workspaceMember.delete({
@@ -288,17 +255,14 @@ export async function leaveWorkspace(workspaceId: string) {
     console.error("Error leaving workspace:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to leave workspace",
+      message:
+        error instanceof Error ? error.message : "Failed to leave workspace",
     };
   }
 }
 
-/**
- * Get workspace members with their permissions (requires WORKSPACE_VIEW permission)
- */
 export async function getWorkspaceMembers(workspaceId: string) {
   try {
-    // Check permission
     await requirePermission(PERMISSIONS.WORKSPACE_VIEW)(workspaceId);
 
     const members = await db.workspaceMember.findMany({
@@ -313,13 +277,9 @@ export async function getWorkspaceMembers(workspaceId: string) {
           },
         },
       },
-      orderBy: [
-        { role: 'desc' }, // ADMIN, EDITOR, VIEWER
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ role: "desc" }, { createdAt: "asc" }],
     });
 
-    // Get workspace owner info
     const workspace = await db.workspace.findUnique({
       where: { id: workspaceId },
       include: {
@@ -348,9 +308,6 @@ export async function getWorkspaceMembers(workspaceId: string) {
   }
 }
 
-/**
- * Check user's permissions in workspace (for client-side use)
- */
 export async function getUserWorkspacePermissions(workspaceId: string) {
   try {
     const user = await currentUser();
@@ -371,19 +328,17 @@ export async function getUserWorkspacePermissions(workspaceId: string) {
     });
 
     if (!member) {
-      // Check if user is owner
       const workspace = await db.workspace.findUnique({
         where: { id: workspaceId },
         select: { ownerId: true },
       });
 
       if (workspace?.ownerId === user.id) {
-        // Owner has admin role
         return {
           success: true,
           role: MEMBER_ROLE.ADMIN,
           isOwner: true,
-          permissions: [], // Will be calculated client-side
+          permissions: [],
         };
       }
 
@@ -402,13 +357,14 @@ export async function getUserWorkspacePermissions(workspaceId: string) {
       success: true,
       role: member.role,
       isOwner: workspace?.ownerId === user.id,
-      permissions: [], // Will be calculated client-side using ROLE_PERMISSIONS
+      permissions: [],
     };
   } catch (error) {
     console.error("Error getting user permissions:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to get permissions",
+      message:
+        error instanceof Error ? error.message : "Failed to get permissions",
     };
   }
 }

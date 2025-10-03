@@ -31,7 +31,12 @@ import { useGetAllRequestsInCollection } from "@/modules/request/hooks/Request";
 import { REST_METHOD } from "@prisma/client";
 import { useRequestPlaygroundStore } from "@/modules/request/store/useRequestStore";
 import { useWorkspaceStore } from "@/modules/Layout/Store";
-import { useUserWorkspacePermissions } from "@/hooks/use-workspace-permissions";
+import {
+  useUserWorkspacePermissions,
+  useCanCreateCollection,
+  useCanEditCollection,
+  useCanDeleteCollection,
+} from "@/hooks/use-workspace-permissions";
 
 interface Props {
   collection: {
@@ -50,12 +55,17 @@ const CollectionFolder = ({ collection }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
 
   const folderRef = useRef<HTMLDivElement>(null);
-  
-  // Get workspace context to check user permissions
+
   const { selectedWorkspace } = useWorkspaceStore();
+
+  const { data: userPermissions } = useUserWorkspacePermissions(
+    collection.workspaceId
+  );
   
-  // Get user permissions for the workspace
-  const { data: userPermissions } = useUserWorkspacePermissions(collection.workspaceId);
+  // Permission checks
+  const canCreateRequest = useCanCreateCollection(collection.workspaceId);
+  const canEditCollection = useCanEditCollection(collection.workspaceId);
+  const canDeleteCollection = useCanDeleteCollection(collection.workspaceId);
 
   const [isEditRequestOpen, setIsEditRequestOpen] = useState(false);
   const [isDeleteRequestOpen, setIsDeleteRequestOpen] = useState(false);
@@ -85,7 +95,6 @@ const CollectionFolder = ({ collection }: Props) => {
 
   const { openRequestTab } = useRequestPlaygroundStore();
 
-  // Keyboard shortcuts handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isFocused) return;
@@ -165,26 +174,26 @@ const CollectionFolder = ({ collection }: Props) => {
             </CollapsibleTrigger>
 
             <div className="flex flex-row justify-center items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              
               {userPermissions?.success && userPermissions?.role && (
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className="text-xs px-1.5 py-0.5 h-5 bg-primary/10 text-primary border-primary/20 font-medium"
                 >
                   <Shield className="w-2.5 h-2.5 mr-1" />
                   {userPermissions.role.toLowerCase()}
                 </Badge>
               )}
-              
-              <button
-                className="p-1 hover:bg-accent rounded"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsAddRequestOpen(true);
-                }}
-              >
-                <FilePlus className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
-              </button>
+              {canCreateRequest && (
+                <button
+                  className="p-1 hover:bg-accent rounded"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsAddRequestOpen(true);
+                  }}
+                >
+                  <FilePlus className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
+                </button>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -196,42 +205,60 @@ const CollectionFolder = ({ collection }: Props) => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => setIsAddRequestOpen(true)}>
-                    <div className="flex flex-row justify-between items-center w-full">
-                      <div className="font-medium flex justify-center items-center">
-                        <FilePlus className="text-green-500 mr-2 w-4 h-4" />
-                        Add Request
+                  {/* Add Request - Only for EDITOR and ADMIN */}
+                  {canCreateRequest && (
+                    <DropdownMenuItem onClick={() => setIsAddRequestOpen(true)}>
+                      <div className="flex flex-row justify-between items-center w-full">
+                        <div className="font-medium flex justify-center items-center">
+                          <FilePlus className="text-green-500 mr-2 w-4 h-4" />
+                          Add Request
+                        </div>
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          ⌘R
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        ⌘R
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                    <div className="flex flex-row justify-between items-center w-full">
-                      <div className="font-medium flex justify-center items-center">
-                        <Edit className="text-blue-500 mr-2 w-4 h-4" />
-                        Rename
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Rename - Only for EDITOR and ADMIN */}
+                  {canEditCollection && (
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                      <div className="flex flex-row justify-between items-center w-full">
+                        <div className="font-medium flex justify-center items-center">
+                          <Edit className="text-blue-500 mr-2 w-4 h-4" />
+                          Rename
+                        </div>
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          ⌘E
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        ⌘E
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setIsDeleteOpen(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <div className="flex flex-row justify-between items-center w-full">
-                      <div className="font-medium flex justify-center items-center">
-                        <Trash className="mr-2 w-4 h-4" />
-                        Delete
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Delete - Only for ADMIN */}
+                  {canDeleteCollection && (
+                    <DropdownMenuItem
+                      onClick={() => setIsDeleteOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <div className="flex flex-row justify-between items-center w-full">
+                        <div className="font-medium flex justify-center items-center">
+                          <Trash className="mr-2 w-4 h-4" />
+                          Delete
+                        </div>
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          ⌘D
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        ⌘D
-                      </span>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Show message if no actions available (VIEWER) */}
+                  {!canCreateRequest && !canEditCollection && !canDeleteCollection && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
+                      Read-only access
                     </div>
-                  </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -295,37 +322,51 @@ const CollectionFolder = ({ collection }: Props) => {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-32">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRequest({
-                                id: request.id,
-                                name: request.name,
-                                url: request.url,
-                                method: request.method,
-                              });
-                              setIsEditRequestOpen(true);
-                            }}
-                          >
-                            <Edit className="text-blue-500 mr-2 w-3 h-3" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRequest({
-                                id: request.id,
-                                name: request.name,
-                                url: request.url,
-                                method: request.method,
-                              });
-                              setIsDeleteRequestOpen(true);
-                            }}
-                          >
-                            <Trash className="mr-2 w-3 h-3" />
-                            Delete
-                          </DropdownMenuItem>
+                          {/* Edit Request - Only for EDITOR and ADMIN */}
+                          {canEditCollection && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRequest({
+                                  id: request.id,
+                                  name: request.name,
+                                  url: request.url,
+                                  method: request.method,
+                                });
+                                setIsEditRequestOpen(true);
+                              }}
+                            >
+                              <Edit className="text-blue-500 mr-2 w-3 h-3" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Delete Request - Only for ADMIN */}
+                          {canDeleteCollection && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRequest({
+                                  id: request.id,
+                                  name: request.name,
+                                  url: request.url,
+                                  method: request.method,
+                                });
+                                setIsDeleteRequestOpen(true);
+                              }}
+                            >
+                              <Trash className="mr-2 w-3 h-3" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Show message if no actions available (VIEWER) */}
+                          {!canEditCollection && !canDeleteCollection && (
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
+                              Read-only
+                            </div>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

@@ -8,6 +8,7 @@ import { useCollections } from '@/modules/collections/hooks/collection';
 import CollectionFolder from '@/modules/collections/components/collection-folder';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useCanCreateCollection } from '@/hooks/use-workspace-permissions';
 
 interface Props {
   currentWorkspace: any;
@@ -20,6 +21,8 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
   const { data: collectionsResponse, isLoading, isError } = useCollections(currentWorkspace?.id);
   
   const collections = collectionsResponse?.success ? collectionsResponse.collections : [];
+  
+  const canCreateCollection = useCanCreateCollection(currentWorkspace?.id || '');
 
   const sidebarItems = [
     { icon: Archive, label: 'Collections', tooltip: 'Collections' },
@@ -40,21 +43,23 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
                 <span className="text-muted-foreground">&rsaquo;</span>
                 <h2 className="text-sm font-semibold">Collections</h2>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-8 w-8"
-                    onClick={() => setIsModalOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create New Collection</p>
-                </TooltipContent>
-              </Tooltip>
+              {canCreateCollection && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create New Collection</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
 
             
@@ -85,15 +90,21 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
                   <div className="text-center py-8 text-muted-foreground">
                     <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p className="text-sm mb-2">No collections yet</p>
-                    <p className="text-xs mb-4">Create your first collection to get started</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setIsModalOpen(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-2" />
-                      Create Collection
-                    </Button>
+                    {canCreateCollection ? (
+                      <>
+                        <p className="text-xs mb-4">Create your first collection to get started</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsModalOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-2" />
+                          Create Collection
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="text-xs">You have read-only access to this workspace</p>
+                    )}
                   </div>
                 </div>
               )}
