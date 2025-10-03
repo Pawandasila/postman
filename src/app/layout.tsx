@@ -82,8 +82,8 @@ export default function RootLayout({
           >
             <SettingsProvider>
               {children}
-              <Toaster richColors />
               <Analytics />
+              <Toaster richColors />
             </SettingsProvider>
           </ThemeProvider>
         </ReactQueryProviders>

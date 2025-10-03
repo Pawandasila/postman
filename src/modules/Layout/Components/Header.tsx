@@ -10,6 +10,7 @@ import SearchBar from "./SearchBar";
 import InviteMember from "./InviteMember";
 import Workspace from "./Workspace";
 import { Hint } from "@/components/ui/hint";
+import Link from "next/link";
 
 interface HeaderProps {
   user: UserProps | null;
@@ -38,17 +39,27 @@ const Header = ({ user }: HeaderProps) => {
       </div>
       
       <div className="flex items-center gap-2 shrink-0">
-        <Hint label="Settings" side="bottom">
-          <Button size="sm" variant="ghost" className="h-9 w-9 p-0">
-            <Settings className="h-4 w-4" />
-          </Button>
-        </Hint>
+        {user ? (
+          <>
+            <Hint label="Settings" side="bottom">
+              <Button size="sm" variant="ghost" className="h-9 w-9 p-0">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Hint>
 
-        <InviteMember />
-        
-        <div className="h-6 w-px bg-border hidden sm:block" />
-        
-        <UserButton user={user} size="md" showEmail={true} showMemberSince={true} />
+            <InviteMember />
+            
+            <div className="h-6 w-px bg-border hidden sm:block" />
+            
+            <UserButton user={user} size="md" showEmail={true} showMemberSince={true} />
+          </>
+        ) : (
+          <Link href="/sign-in">
+            <Button size="sm" variant="default">
+              Sign In
+            </Button>
+          </Link>
+        )}
       </div>
     </header>
   );
