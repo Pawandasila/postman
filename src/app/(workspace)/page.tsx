@@ -16,6 +16,8 @@ import TabbedSidebar from "@/modules/Workspace/components/Sidebar";
 import { useCollections } from "@/modules/collections/hooks/collection";
 import SaveRequestToCollectionModal from "@/modules/collections/components/add-requests";
 import PlaygroundPage from "@/modules/request/components/request-playground";
+import HistoryList from "@/modules/history/component/history-list";
+import DocsGeneratorModal from "@/modules/docs/components/docs-generator-modal";
 import { useState } from "react";
 
 const Page = () => {
@@ -24,6 +26,7 @@ const Page = () => {
   const { data: collectionsResponse } = useCollections(selectedWorkspace?.id!);
   const [isAddRequestOpen, setIsAddRequestOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
 
   const collections = collectionsResponse?.success ? collectionsResponse.collections : [];
   
@@ -143,33 +146,35 @@ const Page = () => {
             </div>
             
             <TabsContent value="history" className="flex-1 m-0">
-              <ScrollArea className="h-full">
-                <div className="p-4">
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">No request history yet</p>
-                    <p className="text-xs mt-2">Your API request history will appear here</p>
-                  </div>
-                </div>
-              </ScrollArea>
+              <HistoryList workspaceId={selectedWorkspace?.id} />
             </TabsContent>
             
             <TabsContent value="docs" className="flex-1 m-0">
               <ScrollArea className="h-full">
                 <div className="p-4 space-y-6">
-                  <div>
-                    <h3 className="font-semibold mb-2">Getting Started</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Create your first API request and start testing
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Send className="h-10 w-10 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">AI Documentation Generator</h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-md">
+                      Generate professional API documentation with AI. Select any request from your collections and get comprehensive markdown docs instantly.
                     </p>
+                    <Button onClick={() => setIsDocsModalOpen(true)} size="lg">
+                      <Send className="h-4 w-4 mr-2" />
+                      Generate Docs
+                    </Button>
                   </div>
                   
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Quick Tips</h4>
+                  <div className="border-t pt-6">
+                    <h4 className="text-sm font-medium mb-3">What you'll get:</h4>
                     <ul className="space-y-2 text-xs text-muted-foreground">
-                      <li>• Create collections to organize your APIs</li>
-                      <li>• Use environments for different configs</li>
-                      <li>• Save requests for quick access</li>
-                      <li>• View history to track your work</li>
+                      <li>• Complete endpoint documentation with examples</li>
+                      <li>• Request/Response schemas and descriptions</li>
+                      <li>• Header and parameter documentation</li>
+                      <li>• Error codes and handling guidelines</li>
+                      <li>• Download as Markdown (.md) file</li>
+                      <li>• Professional formatting ready for GitHub/GitLab</li>
                     </ul>
                   </div>
                 </div>
@@ -182,6 +187,11 @@ const Page = () => {
       <SaveRequestToCollectionModal
         isModalOpen={isAddRequestOpen}
         setIsModalOpen={setIsAddRequestOpen}
+      />
+
+      <DocsGeneratorModal
+        isOpen={isDocsModalOpen}
+        onClose={() => setIsDocsModalOpen(false)}
       />
     </ResizablePanelGroup>
   );

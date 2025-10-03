@@ -26,6 +26,7 @@ model User {
   memberships   WorkspaceMember[]
 
   workspaceInvites WorkspaceInvite[]
+  requestHistory   RequestHistory[]
 }
 
 model Session {
@@ -234,4 +235,50 @@ model Environment {
 
   workspaceId String
   workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+//
+// ─── REQUEST HISTORY (Auto-expires after 24 hours) ──────────────────────
+//
+
+model RequestHistory {
+  id            String      @id @default(cuid())
+  
+  // User who made the request
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Workspace context
+  workspaceId   String
+  workspaceName String
+  
+  // Collection context
+  collectionId  String?
+  collectionName String?
+  
+  // Request details
+  requestId     String?
+  requestName   String
+  method        REST_METHOD
+  url           String
+  
+  // Response details
+  statusCode    Int?
+  statusText    String?
+  responseTime  Int?        // in milliseconds
+  responseSize  Int?        // in bytes
+  
+  // Metadata
+  headers       Json?
+  params        Json?
+  body          Json?
+  response      Json?       // Store response for quick view
+  
+  // Timestamps
+  executedAt    DateTime    @default(now())
+  expiresAt     DateTime    // Auto-delete after 24 hours
+  
+  @@index([userId, executedAt])
+  @@index([workspaceId, executedAt])
+  @@index([expiresAt]) // For efficient cleanup queries
 }
