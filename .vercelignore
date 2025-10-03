@@ -1,0 +1,15 @@
+# Ignore Docker files on Vercel
+docker-compose.yml
+
+# Local environment files
+.env.local
+.env*.local
+
+# Node modules
+node_modules/
+
+# Build outputs
+.next/
+
+# Testing
+coverage/
