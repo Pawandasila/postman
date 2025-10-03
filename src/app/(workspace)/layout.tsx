@@ -4,11 +4,16 @@ import { currentUser } from "@/modules/Authentication/actions";
 import React from "react";
 import { initWorkSpace } from "@/modules/Workspace/actions";
 import TabbedLeftPanel from "@/modules/Workspace/components/TabbedLeftPanel";
+import { redirect } from "next/navigation";
 
 const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>) => {
-  const workspace = await initWorkSpace();  
   const user = await currentUser();
 
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const workspace = await initWorkSpace();  
   
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">

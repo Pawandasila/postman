@@ -28,12 +28,12 @@ export const useAcceptWorkspaceInvite = () => {
   
 };
 
-export const useGetWorkspaceMemebers = (workspaceId: string)=>{
+export const useGetWorkspaceMemebers = (workspaceId: string | undefined)=>{
 
   return useQuery({
-    queryKey: ["workspace-members"],
-    queryFn: async () => getAllWorkspaceMembers(workspaceId),
-    
+    queryKey: ["workspace-members", workspaceId],
+    queryFn: async () => getAllWorkspaceMembers(workspaceId!),
+    enabled: !!workspaceId,
   });
 }
 
