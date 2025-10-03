@@ -6,6 +6,9 @@
     "dev": "docker-compose up -d && next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
+    "start:prod": "docker-compose up -d && npm run build && npm start",
+    "db:start": "docker-compose up -d",
+    "db:stop": "docker-compose down",
     "lint": "eslint"
   },
   "dependencies": {
