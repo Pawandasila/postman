@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SettingsProvider } from "@/contexts/settingsContext";
 import ReactQueryProviders from "@/components/providers/react-query-providers";
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({
   variable: "--font-inter",
@@ -82,6 +83,7 @@ export default function RootLayout({
             <SettingsProvider>
               {children}
               <Toaster richColors />
+              <Analytics />
             </SettingsProvider>
           </ThemeProvider>
         </ReactQueryProviders>
