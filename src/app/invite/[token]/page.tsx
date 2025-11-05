@@ -2,6 +2,8 @@ import { currentUser } from "@/modules/Authentication/actions";
 import { acceptWorkspaceInvite } from "@/modules/invites/actions";
 import { redirect } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 const Invite = async ({ params }: { params: Promise<{ token: string }> }) => {
   const { token } = await params;
 
