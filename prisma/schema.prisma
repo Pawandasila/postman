@@ -18,6 +18,7 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
+  role          USER_ROLE @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
@@ -141,6 +142,11 @@ model WebsocketMessage {
 
   preset      WebSocketPreset? @relation(fields: [presetId], references: [id], onDelete: SetNull)
   meta        Json?
+}
+
+enum USER_ROLE {
+  ADMIN
+  USER
 }
 
 enum MEMBER_ROLE {

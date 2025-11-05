@@ -4,10 +4,14 @@ import { currentUser } from "@/modules/Authentication/actions";
 
 export async function GET() {
   try {
-    // Optional: Add authentication check here
     const user = await currentUser();
+    
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    if (user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
     }
 
     // Get user stats
