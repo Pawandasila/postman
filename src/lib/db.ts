@@ -1,12 +1,17 @@
-import {PrismaClient} from '@prisma/client'
+import { PrismaClient } from '../../app/generated-prisma-client'
+import { withAccelerate } from '@prisma/extension-accelerate'
 
 declare global {
-    var prisma: PrismaClient | undefined
+    var prisma: ReturnType<typeof createPrismaClient> | undefined
 }
 
-const db = globalThis.prisma || new PrismaClient({
-    log: ['query', 'error', 'warn', 'info'],
-})
+function createPrismaClient() {
+    return new PrismaClient({
+        log: ['query', 'error', 'warn', 'info'],
+    }).$extends(withAccelerate())
+}
+
+const db = globalThis.prisma || createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalThis.prisma = db
 
