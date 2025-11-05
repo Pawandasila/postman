@@ -3,9 +3,13 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@prisma/client";
 import { env } from "./env";
 
-// Create a separate Prisma client without Accelerate for Better Auth
-// Better Auth doesn't work with Prisma extensions
-const prismaForAuth = new PrismaClient();
+const prismaForAuth = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL,
+    },
+  },
+});
 
 export const auth = betterAuth({
   database: prismaAdapter(prismaForAuth, {
@@ -14,7 +18,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // Set to true if you want email verification
+    requireEmailVerification: false,
   },
 
   socialProviders: {
