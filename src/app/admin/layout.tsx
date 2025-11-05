@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin";
-import { redirect } from "next/navigation";
+import { AdminSidebar } from "./_components/admin-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,5 +11,14 @@ export default async function AdminLayout({
 }) {
   await requireAdmin();
   
-  return <>{children}</>;
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen w-full bg-background">
+        <AdminSidebar />
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </SidebarProvider>
+  );
 }

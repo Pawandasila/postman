@@ -20,12 +20,14 @@ export async function GET() {
       totalWorkspaces,
       totalCollections,
       totalRequests,
+      totalRequestHistory,
       recentUsers,
     ] = await Promise.all([
       db.user.count(),
       db.workspace.count(),
       db.collection.count(),
       db.request.count(),
+      db.requestHistory.count(),
       db.user.findMany({
         take: 10,
         orderBy: { createdAt: "desc" },
@@ -35,6 +37,7 @@ export async function GET() {
           email: true,
           createdAt: true,
           image: true,
+          role: true,
         },
       }),
     ]);
@@ -52,6 +55,7 @@ export async function GET() {
         totalWorkspaces,
         totalCollections,
         totalRequests,
+        totalRequestHistory,
         authMethods: authMethodStats,
         recentUsers,
       },
