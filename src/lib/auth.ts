@@ -1,10 +1,14 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import db from "./db";
+import { PrismaClient } from "@prisma/client";
 import { env } from "./env";
 
+// Create a separate Prisma client without Accelerate for Better Auth
+// Better Auth doesn't work with Prisma extensions
+const prismaForAuth = new PrismaClient();
+
 export const auth = betterAuth({
-  database: prismaAdapter(db, {
+  database: prismaAdapter(prismaForAuth, {
     provider: "postgresql",
   }),
 
