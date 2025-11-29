@@ -97,6 +97,14 @@ const RequestBar = ({ tab, updateTab }: Props) => {
     const startTime = Date.now();
 
     try {
+      if (!tab.requestId || tab.unsavedChanges) {
+        toast.message("Tip: Save this request", {
+          description:
+            "Press Ctrl + S anytime to save this request to your collections.",
+          duration: 3500,
+        });
+      }
+
       const res = await mutateAsync();
       const responseTime = Date.now() - startTime;
 
@@ -276,6 +284,17 @@ const RequestBar = ({ tab, updateTab }: Props) => {
         <div className="flex items-center gap-2 mt-2 px-2 text-xs text-destructive">
           <AlertCircle className="h-3 w-3" />
           <span>Please enter a valid URL</span>
+        </div>
+      )}
+
+      {(!tab.requestId || tab.unsavedChanges) && isValidUrl && (
+        <div className="mt-3 px-3 py-2 text-xs rounded-md border bg-amber-50/70 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <span className="font-medium">Unsaved request.</span>
+          <span>Press</span>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">Ctrl</kbd>
+          <span>+</span>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">S</kbd>
+          <span>to save it.</span>
         </div>
       )}
     </div>
