@@ -142,11 +142,11 @@ export async function sendRequest(req: {
       response.headers["content-length"] ||
       new TextEncoder().encode(JSON.stringify(response.data)).length;
 
-    
+
     let headersObject: Record<string, string> = {};
     try {
       if (response.headers && typeof response.headers === 'object') {
-        
+
         headersObject = Object.keys(response.headers).reduce((acc, key) => {
           const value = response.headers[key];
           if (typeof value === 'string') {
@@ -170,12 +170,12 @@ export async function sendRequest(req: {
       responseTime: Math.round(duration),
       size: size,
     };
-  } catch (error : any) {
+  } catch (error: any) {
     const end = performance.now();
-    
+
     return {
       error: error.message,
-      duration : Math.round(end - start),
+      duration: Math.round(end - start),
     };
   }
 }
@@ -205,14 +205,14 @@ export async function runUnsavedRequest(req: Request) {
       }
     }
 
-    
+
     let parsedBody: any = undefined;
     if (req.body) {
       try {
-        
+
         parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
       } catch (e) {
-        
+
         parsedBody = req.body;
       }
     }
@@ -268,7 +268,7 @@ export async function runUnsavedRequest(req: Request) {
   }
 }
 
-export async function run(requestId: string) {
+export async function run(requestId: string, overrides?: Request) {
   try {
     const request = await db.request.findUnique({
       where: { id: requestId },
@@ -278,15 +278,18 @@ export async function run(requestId: string) {
       throw new Error("Request not found");
     }
 
+    // Use overrides if provided, otherwise use database record
+    const requestData = overrides || request;
+
     let parsedHeaders: Record<string, string> | undefined;
     let parsedParameters: Record<string, string> | undefined;
 
     try {
-      if (request.headers) {
-        if (typeof request.headers === 'string') {
-          parsedHeaders = JSON.parse(request.headers);
-        } else if (typeof request.headers === 'object') {
-          parsedHeaders = request.headers as Record<string, string>;
+      if (requestData.headers) {
+        if (typeof requestData.headers === 'string') {
+          parsedHeaders = JSON.parse(requestData.headers);
+        } else if (typeof requestData.headers === 'object') {
+          parsedHeaders = requestData.headers as Record<string, string>;
         }
       }
     } catch (e) {
@@ -295,11 +298,11 @@ export async function run(requestId: string) {
     }
 
     try {
-      if (request.parameters) {
-        if (typeof request.parameters === 'string') {
-          parsedParameters = JSON.parse(request.parameters);
-        } else if (typeof request.parameters === 'object') {
-          parsedParameters = request.parameters as Record<string, string>;
+      if (requestData.parameters) {
+        if (typeof requestData.parameters === 'string') {
+          parsedParameters = JSON.parse(requestData.parameters);
+        } else if (typeof requestData.parameters === 'object') {
+          parsedParameters = requestData.parameters as Record<string, string>;
         }
       }
     } catch (e) {
@@ -308,11 +311,11 @@ export async function run(requestId: string) {
     }
 
     const requestConfig = {
-      method: request.method,
-      url: request.url,
+      method: requestData.method,
+      url: requestData.url,
       headers: parsedHeaders,
       parameters: parsedParameters,
-      body: request.body || undefined,
+      body: requestData.body || undefined,
     };
 
     const result = await sendRequest(requestConfig);
@@ -367,11 +370,9 @@ export async function run(requestId: string) {
     } catch (dbError: any) {
       return {
         success: false,
-        error: `Request failed: ${
-          error.message || "Unknown error"
-        }. Additionally, failed to log the request run.   Error: ${
-          dbError.message || "Unknown error"
-        }`,
+        error: `Request failed: ${error.message || "Unknown error"
+          }. Additionally, failed to log the request run.   Error: ${dbError.message || "Unknown error"
+          }`,
       };
     }
   }

@@ -119,7 +119,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
       const res = await mutateAsync();
       const responseTime = Date.now() - startTime;
 
-      if (selectedWorkspace && res?.success && res.requestRun) {
+      if (selectedWorkspace && res?.success && res.requestRun && tab.requestId) {
         try {
           const parseJsonSafely = (data: any): any => {
             if (!data) return undefined;
@@ -175,7 +175,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
   useEffect(() => {
     try {
       localStorage.setItem("pb_auto_run", JSON.stringify(autoRun));
-    } catch {}
+    } catch { }
   }, [autoRun]);
 
   useEffect(() => {
