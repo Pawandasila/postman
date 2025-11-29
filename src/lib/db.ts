@@ -1,14 +1,13 @@
-import { PrismaClient } from '../../app/generated-prisma-client'
-import { withAccelerate } from '@prisma/extension-accelerate'
+import { PrismaClient } from '@prisma/client'
 
 declare global {
-    var prisma: ReturnType<typeof createPrismaClient> | undefined
+    var prisma: PrismaClient | undefined
 }
 
 function createPrismaClient() {
     return new PrismaClient({
         log: ['query', 'error', 'warn', 'info'],
-    }).$extends(withAccelerate())
+    });
 }
 
 const db = globalThis.prisma || createPrismaClient()

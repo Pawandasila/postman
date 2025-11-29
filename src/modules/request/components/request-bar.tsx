@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { RequestTab } from "../store/useRequestStore";
 
 import {
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { saveRequestToHistory } from "@/modules/history/action/save-history";
 import { useWorkspaceStore } from "@/modules/Layout/Store";
 import { useHistoryStore } from "@/modules/history/store/useHistoryStore";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   tab: RequestTab;
@@ -28,6 +29,16 @@ interface Props {
 const RequestBar = ({ tab, updateTab }: Props) => {
   const [isUrlFocused, setIsUrlFocused] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [autoRun, setAutoRun] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const v = localStorage.getItem("pb_auto_run");
+      return v ? JSON.parse(v) : false;
+    } catch {
+      return false;
+    }
+  });
+  const debounceRef = useRef<number | null>(null);
   const { selectedWorkspace } = useWorkspaceStore();
   const { triggerRefetch } = useHistoryStore();
 
@@ -97,10 +108,18 @@ const RequestBar = ({ tab, updateTab }: Props) => {
     const startTime = Date.now();
 
     try {
+      if (!tab.requestId || tab.unsavedChanges) {
+        toast.message("Tip: Save this request", {
+          description:
+            "Press Ctrl + S anytime to save this request to your collections.",
+          duration: 3500,
+        });
+      }
+
       const res = await mutateAsync();
       const responseTime = Date.now() - startTime;
 
-      if (selectedWorkspace && res?.success && res.requestRun) {
+      if (selectedWorkspace && res?.success && res.requestRun && tab.requestId) {
         try {
           const parseJsonSafely = (data: any): any => {
             if (!data) return undefined;
@@ -152,6 +171,34 @@ const RequestBar = ({ tab, updateTab }: Props) => {
       setIsSending(false);
     }
   };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("pb_auto_run", JSON.stringify(autoRun));
+    } catch { }
+  }, [autoRun]);
+
+  useEffect(() => {
+    if (!autoRun) return;
+    if (!isValidUrl) return;
+    if (isSending) return;
+
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    debounceRef.current = window.setTimeout(() => {
+      onSendRequest();
+    }, 800);
+
+    return () => {
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab.url, tab.method, autoRun, isValidUrl]);
 
   return (
     <div className="w-full">
@@ -232,6 +279,12 @@ const RequestBar = ({ tab, updateTab }: Props) => {
             onChange={(e) => updateTab(tab.id, { url: e.target.value })}
             onFocus={() => setIsUrlFocused(true)}
             onBlur={() => setIsUrlFocused(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onSendRequest();
+              }
+            }}
             placeholder="Enter URL"
             className="w-full bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60 font-mono text-sm p-1 h-auto"
           />
@@ -245,6 +298,12 @@ const RequestBar = ({ tab, updateTab }: Props) => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Auto-run toggle (desktop) */}
+        <div className="hidden md:flex items-center gap-2 px-2">
+          <span className="text-xs text-muted-foreground">Auto-run</span>
+          <Switch checked={autoRun} onCheckedChange={(v) => setAutoRun(Boolean(v))} />
         </div>
 
         <Button
@@ -276,6 +335,23 @@ const RequestBar = ({ tab, updateTab }: Props) => {
         <div className="flex items-center gap-2 mt-2 px-2 text-xs text-destructive">
           <AlertCircle className="h-3 w-3" />
           <span>Please enter a valid URL</span>
+        </div>
+      )}
+
+      {/* Auto-run toggle (mobile view) */}
+      <div className="mt-2 flex md:hidden items-center gap-2 px-2">
+        <span className="text-xs text-muted-foreground">Auto-run</span>
+        <Switch checked={autoRun} onCheckedChange={(v) => setAutoRun(Boolean(v))} />
+      </div>
+
+      {(!tab.requestId || tab.unsavedChanges) && isValidUrl && (
+        <div className="mt-3 px-3 py-2 text-xs rounded-md border bg-amber-50/70 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <span className="font-medium">Unsaved request.</span>
+          <span>Press</span>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">Ctrl</kbd>
+          <span>+</span>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">S</kbd>
+          <span>to save it.</span>
         </div>
       )}
     </div>

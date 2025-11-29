@@ -4,10 +4,14 @@ import { currentUser } from "@/modules/Authentication/actions";
 
 export async function GET() {
   try {
-    // Optional: Add authentication check here
     const user = await currentUser();
+    
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    if (user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
     }
 
     // Get user stats
@@ -16,12 +20,14 @@ export async function GET() {
       totalWorkspaces,
       totalCollections,
       totalRequests,
+      totalRequestHistory,
       recentUsers,
     ] = await Promise.all([
       db.user.count(),
       db.workspace.count(),
       db.collection.count(),
       db.request.count(),
+      db.requestHistory.count(),
       db.user.findMany({
         take: 10,
         orderBy: { createdAt: "desc" },
@@ -31,6 +37,7 @@ export async function GET() {
           email: true,
           createdAt: true,
           image: true,
+          role: true,
         },
       }),
     ]);
@@ -48,6 +55,7 @@ export async function GET() {
         totalWorkspaces,
         totalCollections,
         totalRequests,
+        totalRequestHistory,
         authMethods: authMethodStats,
         recentUsers,
       },

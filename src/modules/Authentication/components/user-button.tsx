@@ -103,7 +103,6 @@ export default function UserButton({
     }
   };
 
-  
   const getUserInitials = (name: string | null, email: string | null) => {
     if (name) {
       return name
@@ -119,7 +118,6 @@ export default function UserButton({
     return "U";
   };
 
-  
   const formatMemberSince = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       month: "long",
@@ -127,14 +125,12 @@ export default function UserButton({
     }).format(new Date(date));
   };
 
-  
   const avatarSizes = {
     sm: "h-8 w-8",
     md: "h-10 w-10",
     lg: "h-12 w-12",
   };
 
-  
   if (!user) {
     return null;
   }
@@ -144,11 +140,7 @@ export default function UserButton({
       <Button
         variant="ghost"
         className={`relative flex items-center gap-2 ${
-          size === "sm"
-            ? "h-9 px-2"
-            : size === "lg"
-            ? "h-12 px-3"
-            : "h-10 px-2"
+          size === "sm" ? "h-9 px-2" : size === "lg" ? "h-12 px-3" : "h-10 px-2"
         } rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border`}
         disabled
       >
@@ -248,6 +240,13 @@ export default function UserButton({
               {badgeText}
             </Badge>
           )}
+
+          <Badge
+            variant={'secondary'}
+            className="absolute -top-1 -right-1 h-5 px-1.5 text-[10px] font-semibold"
+          >
+            {user?.role === 'ADMIN' ? 'Admin' : 'User'}
+          </Badge>
         </Button>
       </DropdownMenuTrigger>
 
@@ -354,7 +353,6 @@ export default function UserButton({
 
         <DropdownMenuSeparator className="my-2" />
 
-        
         <div className="px-3 py-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Theme</span>

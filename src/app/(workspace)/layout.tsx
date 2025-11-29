@@ -6,6 +6,8 @@ import { initWorkSpace } from "@/modules/Workspace/actions";
 import TabbedLeftPanel from "@/modules/Workspace/components/TabbedLeftPanel";
 import { redirect } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>) => {
   const user = await currentUser();
 
