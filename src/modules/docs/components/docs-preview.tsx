@@ -1,14 +1,30 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ArrowLeft,
+  Download,
+  Copy,
+  Check,
+  Info,
+  Shield,
+  Globe,
+  FileJson,
+  ListFilter,
+  Layers,
+  BookOpen,
+  AlertCircle,
+  StickyNote,
+  Key,
+} from "lucide-react";
 import { useDocsStore } from "../store/useDocsStore";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useState, useCallback } from "react";
 
 interface DocsPreviewProps {
   isOpen: boolean;
@@ -17,342 +33,642 @@ interface DocsPreviewProps {
   onBack: () => void;
 }
 
+const METHOD_STYLES: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
+  GET: {
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-600 dark:text-emerald-400",
+    border: "border-emerald-500/30",
+  },
+  POST: {
+    bg: "bg-blue-500/10",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-500/30",
+  },
+  PUT: {
+    bg: "bg-amber-500/10",
+    text: "text-amber-600 dark:text-amber-400",
+    border: "border-amber-500/30",
+  },
+  PATCH: {
+    bg: "bg-orange-500/10",
+    text: "text-orange-600 dark:text-orange-400",
+    border: "border-orange-500/30",
+  },
+  DELETE: {
+    bg: "bg-red-500/10",
+    text: "text-red-600 dark:text-red-400",
+    border: "border-red-500/30",
+  },
+};
+
+const STATUS_STYLE = (code: number) => {
+  if (code >= 200 && code < 300)
+    return {
+      badge:
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30",
+      dot: "bg-emerald-500",
+    };
+  if (code >= 300 && code < 400)
+    return {
+      badge:
+        "bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30",
+      dot: "bg-blue-500",
+    };
+  if (code >= 400 && code < 500)
+    return {
+      badge:
+        "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30",
+      dot: "bg-amber-500",
+    };
+  return {
+    badge:
+      "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/30",
+    dot: "bg-red-500",
+  };
+};
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [text]);
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+      title="Copy to clipboard"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-emerald-500" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  title,
+}: {
+  icon: React.ElementType;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 pb-3 border-b border-border/60">
+      <div className="p-1.5 rounded-md bg-primary/10">
+        <Icon className="h-3.5 w-3.5 text-primary" />
+      </div>
+      <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+    </div>
+  );
+}
+
+function ParamRow({
+  name,
+  type,
+  required,
+  description,
+  example,
+}: {
+  name: string;
+  type: string;
+  required: boolean;
+  description: string;
+  example?: string;
+}) {
+  return (
+    <div className="grid grid-cols-[180px_1fr] gap-4 py-3 border-b border-border/50 last:border-0">
+      <div className="space-y-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <code className="text-xs font-semibold font-mono text-foreground bg-muted px-1.5 py-0.5 rounded">
+            {name}
+          </code>
+          {required && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-red-500">
+              required
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] text-muted-foreground font-mono">
+          {type}
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {description}
+        </p>
+        {example && (
+          <code className="text-[11px] text-muted-foreground/80 font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
+            Example: {example}
+          </code>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CodeBlock({
+  code,
+  language = "json",
+}: {
+  code: string;
+  language?: string;
+}) {
+  return (
+    <div className="relative group rounded-lg border border-border/60 overflow-hidden w-full min-w-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border/60">
+        <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest">
+          {language}
+        </span>
+        <CopyButton text={code} />
+      </div>
+      <div className="overflow-x-auto">
+        <pre className="p-4 text-xs font-mono bg-background leading-relaxed text-foreground/85 whitespace-pre-wrap break-all">
+          <code>{code}</code>
+        </pre>
+      </div>
+    </div>
+  );
+}
+
 const DocsPreview = ({ isOpen, onClose, docId, onBack }: DocsPreviewProps) => {
   const { getDocById } = useDocsStore();
   const doc = getDocById(docId);
 
-  if (!doc) {
-    return null;
-  }
+  if (!doc) return null;
+
+  const { documentation, metadata } = doc;
+  const method = documentation.endpoint.method;
+  const methodStyle = METHOD_STYLES[method] ?? METHOD_STYLES["GET"];
 
   const generateMarkdown = () => {
-    const { documentation, metadata } = doc;
-    let markdown = `# ${documentation.title}\n\n`;
-    markdown += `> ${documentation.summary}\n\n`;
-    markdown += `**Generated:** ${format(doc.generatedAt, "PPpp")}  \n`;
-    markdown += `**Created by:** ${metadata.workspaceName} / ${metadata.collectionName}\n\n`;
-    markdown += `---\n\n`;
-
-    // Description
-    markdown += `## Description\n\n${documentation.description}\n\n`;
-
-    // Endpoint
-    markdown += `## Endpoint\n\n`;
-    markdown += `\`\`\`\n`;
-    markdown += `${documentation.endpoint.method} ${documentation.endpoint.url}\n`;
-    markdown += `\`\`\`\n\n`;
-
-    if (documentation.endpoint.baseUrl) {
-      markdown += `**Base URL:** \`${documentation.endpoint.baseUrl}\`\n\n`;
-    }
-
-    // Authentication
+    let md = `# ${documentation.title}\n\n> ${documentation.summary}\n\n`;
+    md += `**Generated:** ${format(doc.generatedAt, "PPpp")}  \n`;
+    md += `**Workspace:** ${metadata.workspaceName} / ${metadata.collectionName}\n\n---\n\n`;
+    md += `## Endpoint\n\n\`\`\`\n${method} ${documentation.endpoint.url}\n\`\`\`\n\n`;
+    md += `## Description\n\n${documentation.description}\n\n`;
     if (documentation.authentication) {
-      markdown += `## Authentication\n\n`;
-      markdown += `- **Required:** ${documentation.authentication.required ? "Yes" : "No"}\n`;
-      if (documentation.authentication.type) {
-        markdown += `- **Type:** ${documentation.authentication.type}\n`;
-      }
-      if (documentation.authentication.description) {
-        markdown += `- **Description:** ${documentation.authentication.description}\n`;
-      }
-      markdown += `\n`;
+      md += `## Authentication\n\n- **Required:** ${documentation.authentication.required ? "Yes" : "No"}\n`;
+      if (documentation.authentication.type)
+        md += `- **Type:** ${documentation.authentication.type}\n`;
+      if (documentation.authentication.description)
+        md += `- **Description:** ${documentation.authentication.description}\n`;
+      md += "\n";
     }
-
-    // Headers
-    markdown += `## Headers\n\n`;
-    markdown += `| Header | Type | Required | Description | Example |\n`;
-    markdown += `|--------|------|----------|-------------|---------|\n`;
-    documentation.headers.forEach((header) => {
-      markdown += `| \`${header.name}\` | ${header.type} | ${header.required ? "✓" : "-"} | ${header.description} | ${header.example || "-"} |\n`;
+    md += `## Headers\n\n| Header | Type | Required | Description | Example |\n|--------|------|----------|-------------|---------|\\n`;
+    documentation.headers.forEach((h) => {
+      md += `| \`${h.name}\` | ${h.type} | ${h.required ? "✓" : "-"} | ${h.description} | ${h.example ?? "-"} |\n`;
     });
-    markdown += `\n`;
-
-    // Query Parameters
-    if (documentation.queryParameters && documentation.queryParameters.length > 0) {
-      markdown += `## Query Parameters\n\n`;
-      markdown += `| Parameter | Type | Required | Description | Example |\n`;
-      markdown += `|-----------|------|----------|-------------|---------|\n`;
-      documentation.queryParameters.forEach((param) => {
-        markdown += `| \`${param.name}\` | ${param.type} | ${param.required ? "✓" : "-"} | ${param.description} | ${param.example || "-"} |\n`;
+    md += "\n";
+    if (documentation.queryParameters?.length) {
+      md += `## Query Parameters\n\n| Parameter | Type | Required | Description | Example |\n|-----------|------|----------|-------------|---------|\\n`;
+      documentation.queryParameters.forEach((p) => {
+        md += `| \`${p.name}\` | ${p.type} | ${p.required ? "✓" : "-"} | ${p.description} | ${p.example ?? "-"} |\n`;
       });
-      markdown += `\n`;
+      md += "\n";
     }
-
-    // Request Body
     if (documentation.requestBody) {
-      markdown += `## Request Body\n\n`;
-      markdown += `**Content-Type:** \`${documentation.requestBody.contentType}\`\n\n`;
-      markdown += `${documentation.requestBody.description}\n\n`;
-      markdown += `### Schema\n\n\`\`\`json\n${documentation.requestBody.schema}\n\`\`\`\n\n`;
-      markdown += `### Example\n\n\`\`\`json\n${documentation.requestBody.example}\n\`\`\`\n\n`;
+      md += `## Request Body\n\n**Content-Type:** \`${documentation.requestBody.contentType}\`\n\n`;
+      md += `${documentation.requestBody.description}\n\n\`\`\`json\n${documentation.requestBody.example}\n\`\`\`\n\n`;
     }
-
-    // Responses
-    markdown += `## Responses\n\n`;
-    documentation.responses.forEach((response) => {
-      markdown += `### ${response.statusCode} - ${response.description}\n\n`;
-      if (response.example) {
-        markdown += `\`\`\`json\n${response.example}\n\`\`\`\n\n`;
-      }
+    md += `## Responses\n\n`;
+    documentation.responses.forEach((r) => {
+      md += `### ${r.statusCode} — ${r.description}\n\n`;
+      if (r.example) md += `\`\`\`json\n${r.example}\n\`\`\`\n\n`;
     });
-
-    // Examples
-    if (documentation.examples && documentation.examples.length > 0) {
-      markdown += `## Examples\n\n`;
-      documentation.examples.forEach((example) => {
-        markdown += `### ${example.title}\n\n`;
-        markdown += `${example.description}\n\n`;
-        markdown += `**Request:**\n\n\`\`\`bash\n${example.request}\n\`\`\`\n\n`;
-        if (example.response) {
-          markdown += `**Response:**\n\n\`\`\`json\n${example.response}\n\`\`\`\n\n`;
-        }
+    if (documentation.errorCodes?.length) {
+      md += `## Error Codes\n\n| Code | Message | Description |\n|------|---------|-------------|\n`;
+      documentation.errorCodes.forEach((e) => {
+        md += `| ${e.code} | ${e.message} | ${e.description} |\n`;
       });
+      md += "\n";
     }
-
-    // Error Codes
-    if (documentation.errorCodes && documentation.errorCodes.length > 0) {
-      markdown += `## Error Codes\n\n`;
-      markdown += `| Code | Message | Description |\n`;
-      markdown += `|------|---------|-------------|\n`;
-      documentation.errorCodes.forEach((error) => {
-        markdown += `| ${error.code} | ${error.message} | ${error.description} |\n`;
+    if (documentation.notes?.length) {
+      md += `## Notes\n\n`;
+      documentation.notes.forEach((n) => {
+        md += `- ${n}\n`;
       });
-      markdown += `\n`;
+      md += "\n";
     }
-
-    // Notes
-    if (documentation.notes && documentation.notes.length > 0) {
-      markdown += `## Notes\n\n`;
-      documentation.notes.forEach((note) => {
-        markdown += `- ${note}\n`;
-      });
-      markdown += `\n`;
-    }
-
-    markdown += `---\n\n`;
-    markdown += `*Documentation generated by AI on ${format(doc.generatedAt, "PPpp")}*\n`;
-
-    return markdown;
+    md += `---\n\n*Generated by AI on ${format(doc.generatedAt, "PPpp")}*\n`;
+    return md;
   };
 
   const handleDownload = () => {
     try {
-      const markdown = generateMarkdown();
-      const blob = new Blob([markdown], { type: "text/markdown" });
+      const blob = new Blob([generateMarkdown()], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${doc.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-docs.md`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${doc.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-docs.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Documentation downloaded successfully!");
-    } catch (error) {
-      console.error("Failed to download:", error);
+      toast.success("Documentation downloaded!");
+    } catch {
       toast.error("Failed to download documentation");
     }
   };
 
-  const getStatusColor = (code: number) => {
-    if (code >= 200 && code < 300) return "text-green-600";
-    if (code >= 300 && code < 400) return "text-blue-600";
-    if (code >= 400 && code < 500) return "text-orange-600";
-    return "text-red-600";
-  };
+  const hasRequest =
+    documentation.headers.length > 0 ||
+    (documentation.queryParameters?.length ?? 0) > 0 ||
+    !!documentation.requestBody ||
+    !!documentation.authentication;
+  const hasResponse =
+    documentation.responses.length > 0 ||
+    (documentation.errorCodes?.length ?? 0) > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-background max-w-6xl max-h-[90vh] p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-background rounded-t-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={onBack}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <DialogTitle className="text-xl font-semibold">
-                  {doc.title}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {doc.description}
-                </p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                  <span>{doc.metadata.workspaceName}</span>
-                  <span>•</span>
-                  <span>{doc.metadata.collectionName}</span>
-                  <span>•</span>
-                  <span>Created {format(new Date(doc.metadata.createdAt), "PP")}</span>
-                </div>
-              </div>
-            </div>
-            <Button onClick={handleDownload} size="lg">
-              <Download className="h-4 w-4 mr-2" />
-              Download MD
-            </Button>
-          </div>
-        </DialogHeader>
-
-        <ScrollArea className="max-h-[calc(90vh-180px)] bg-background rounded-b-lg">
-          <div className="px-6 py-6 space-y-6">
-            {/* Endpoint */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Endpoint
-              </h3>
-              <div className="p-4 bg-muted/50 rounded-lg border font-mono">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="font-bold">
-                    {doc.documentation.endpoint.method}
-                  </Badge>
-                  <code className="text-sm">{doc.documentation.endpoint.url}</code>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Description */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Description</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {doc.documentation.description}
+      <DialogTitle>Docs Preview</DialogTitle>
+      <DialogContent className="max-w-4xl w-full h-[90vh] p-0 gap-0 bg-background border-border overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border/60 bg-background shrink-0">
+          <div className="flex items-start gap-3 min-w-0">
+            <button
+              onClick={onBack}
+              className="mt-0.5 p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold tracking-tight truncate">
+                {doc.title}
+              </h2>
+              <p className="text-sm text-muted-foreground leading-snug mt-0.5 line-clamp-2">
+                {documentation.summary}
               </p>
-            </div>
-
-            <Separator />
-
-            {/* Headers */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Headers</h3>
-              <div className="space-y-2">
-                {doc.documentation.headers.map((header, idx) => (
-                  <div key={idx} className="p-3 bg-card border rounded-lg">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <code className="text-sm font-semibold">{header.name}</code>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {header.type}
-                        </Badge>
-                        {header.required && (
-                          <Badge variant="destructive" className="text-xs">
-                            Required
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{header.description}</p>
-                    {header.example && (
-                      <code className="text-xs mt-2 block p-2 bg-muted rounded">
-                        {header.example}
-                      </code>
-                    )}
-                  </div>
-                ))}
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className="text-[11px] text-muted-foreground/70">
+                  {metadata.workspaceName}
+                </span>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="text-[11px] text-muted-foreground/70">
+                  {metadata.collectionName}
+                </span>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="text-[11px] text-muted-foreground/70">
+                  Created {format(new Date(metadata.createdAt), "PP")}
+                </span>
               </div>
             </div>
-
-            {/* Query Parameters */}
-            {doc.documentation.queryParameters && doc.documentation.queryParameters.length > 0 && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">Query Parameters</h3>
-                  <div className="space-y-2">
-                    {doc.documentation.queryParameters.map((param, idx) => (
-                      <div key={idx} className="p-3 bg-card border rounded-lg">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <code className="text-sm font-semibold">{param.name}</code>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {param.type}
-                            </Badge>
-                            {param.required && (
-                              <Badge variant="destructive" className="text-xs">
-                                Required
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{param.description}</p>
-                        {param.example && (
-                          <code className="text-xs mt-2 block p-2 bg-muted rounded">
-                            {param.example}
-                          </code>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Request Body */}
-            {doc.documentation.requestBody && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">Request Body</h3>
-                  <Badge variant="secondary">{doc.documentation.requestBody.contentType}</Badge>
-                  <p className="text-sm text-muted-foreground">
-                    {doc.documentation.requestBody.description}
-                  </p>
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold">Example:</p>
-                    <pre className="p-4 bg-muted rounded-lg text-xs overflow-x-auto">
-                      <code>{doc.documentation.requestBody.example}</code>
-                    </pre>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Responses */}
-            <Separator />
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Responses</h3>
-              <div className="space-y-3">
-                {doc.documentation.responses.map((response, idx) => (
-                  <div key={idx} className="p-4 bg-card border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-lg font-bold font-mono ${getStatusColor(response.statusCode)}`}>
-                        {response.statusCode}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {response.description}
-                      </span>
-                    </div>
-                    {response.example && (
-                      <pre className="mt-3 p-3 bg-muted rounded text-xs overflow-x-auto">
-                        <code>{response.example}</code>
-                      </pre>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Notes */}
-            {doc.documentation.notes && doc.documentation.notes.length > 0 && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">Notes</h3>
-                  <ul className="space-y-2">
-                    {doc.documentation.notes.map((note, idx) => (
-                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{note}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
           </div>
-        </ScrollArea>
+          <Button
+            onClick={handleDownload}
+            size="sm"
+            className="shrink-0 gap-2 font-medium"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download MD
+          </Button>
+        </div>
+
+        {/* Endpoint Strip */}
+        <div className="px-6 py-3 border-b border-border/60 bg-muted/30 shrink-0">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <span
+              className={`shrink-0 text-xs font-bold font-mono px-2.5 py-1 rounded-md border ${methodStyle.bg} ${methodStyle.text} ${methodStyle.border}`}
+            >
+              {method}
+            </span>
+            <code className="text-sm font-mono text-foreground/90 truncate flex-1">
+              {documentation.endpoint.url}
+            </code>
+            <CopyButton text={documentation.endpoint.url} />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs
+          defaultValue="overview"
+          className="flex-1 overflow-hidden flex flex-col"
+        >
+          <TabsList className="mx-6 mt-3 mb-0 w-fit h-9 bg-muted/50 shrink-0">
+            <TabsTrigger
+              value="overview"
+              className="text-xs gap-1.5 data-[state=active]:bg-background"
+            >
+              <Info className="h-3 w-3" />
+              Overview
+            </TabsTrigger>
+            {hasRequest && (
+              <TabsTrigger
+                value="request"
+                className="text-xs gap-1.5 data-[state=active]:bg-background"
+              >
+                <Globe className="h-3 w-3" />
+                Request
+              </TabsTrigger>
+            )}
+            {hasResponse && (
+              <TabsTrigger
+                value="response"
+                className="text-xs gap-1.5 data-[state=active]:bg-background"
+              >
+                <Layers className="h-3 w-3" />
+                Response
+              </TabsTrigger>
+            )}
+            {(documentation.examples?.length ?? 0) > 0 && (
+              <TabsTrigger
+                value="examples"
+                className="text-xs gap-1.5 data-[state=active]:bg-background"
+              >
+                <BookOpen className="h-3 w-3" />
+                Examples
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="flex-1 overflow-hidden mt-0">
+            <ScrollArea className="h-full">
+              <div className="px-6 py-5 space-y-6">
+                {/* Description */}
+                <div className="space-y-3">
+                  <SectionHeader icon={Info} title="Description" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {documentation.description}
+                  </p>
+                </div>
+
+                {/* Authentication */}
+                {documentation.authentication && (
+                  <div className="space-y-3">
+                    <SectionHeader icon={Shield} title="Authentication" />
+                    <div className="flex items-start gap-4 p-4 rounded-lg border border-border/60 bg-card">
+                      <div className="p-2 rounded-md bg-primary/10 shrink-0">
+                        <Key className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {documentation.authentication.required
+                              ? "Required"
+                              : "Optional"}
+                          </span>
+                          {documentation.authentication.type && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] font-mono"
+                            >
+                              {documentation.authentication.type}
+                            </Badge>
+                          )}
+                        </div>
+                        {documentation.authentication.description && (
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {documentation.authentication.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {documentation.notes && documentation.notes.length > 0 && (
+                  <div className="space-y-3">
+                    <SectionHeader icon={StickyNote} title="Notes" />
+                    <ul className="space-y-2">
+                      {documentation.notes.map((note, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-start gap-2.5 text-sm text-muted-foreground"
+                        >
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60 shrink-0" />
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Request Tab */}
+          {hasRequest && (
+            <TabsContent
+              value="request"
+              className="flex-1 overflow-hidden mt-0"
+            >
+              <ScrollArea className="h-full">
+                <div className="px-6 py-5 space-y-6">
+                  {/* Headers */}
+                  {documentation.headers.length > 0 && (
+                    <div className="space-y-3">
+                      <SectionHeader icon={ListFilter} title="Headers" />
+                      <div className="rounded-lg border border-border/60 overflow-hidden bg-card divide-y divide-border/50">
+                        {documentation.headers.map((header, idx) => (
+                          <ParamRow
+                            key={idx}
+                            name={header.name}
+                            type={header.type}
+                            required={header.required}
+                            description={header.description}
+                            example={header.example}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Query Parameters */}
+                  {documentation.queryParameters &&
+                    documentation.queryParameters.length > 0 && (
+                      <div className="space-y-3">
+                        <SectionHeader
+                          icon={FileJson}
+                          title="Query Parameters"
+                        />
+                        <div className="rounded-lg border border-border/60 overflow-hidden bg-card divide-y divide-border/50">
+                          {documentation.queryParameters.map((param, idx) => (
+                            <ParamRow
+                              key={idx}
+                              name={param.name}
+                              type={param.type}
+                              required={param.required}
+                              description={param.description}
+                              example={param.example}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Request Body */}
+                  {documentation.requestBody && (
+                    <div className="space-y-3">
+                      <SectionHeader icon={Globe} title="Request Body" />
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="font-mono text-[11px]"
+                          >
+                            {documentation.requestBody.contentType}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {documentation.requestBody.description}
+                        </p>
+                        {documentation.requestBody.schema && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              Schema
+                            </p>
+                            <CodeBlock
+                              code={documentation.requestBody.schema}
+                              language="json"
+                            />
+                          </div>
+                        )}
+                        {documentation.requestBody.example && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              Example
+                            </p>
+                            <CodeBlock
+                              code={documentation.requestBody.example}
+                              language="json"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          )}
+
+          {/* Response Tab */}
+          {hasResponse && (
+            <TabsContent
+              value="response"
+              className="flex-1 overflow-hidden mt-0"
+            >
+              <ScrollArea className="h-full">
+                <div className="px-6 py-5 space-y-6">
+                  {/* Responses */}
+                  {documentation.responses.length > 0 && (
+                    <div className="space-y-3">
+                      <SectionHeader icon={Layers} title="Responses" />
+                      <div className="space-y-3">
+                        {documentation.responses.map((response, idx) => {
+                          const style = STATUS_STYLE(response.statusCode);
+                          return (
+                            <div
+                              key={idx}
+                              className="rounded-lg border border-border/60 overflow-hidden"
+                            >
+                              <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 border-b border-border/50">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 text-xs font-bold font-mono px-2 py-0.5 rounded ${style.badge}`}
+                                >
+                                  <span
+                                    className={`h-1.5 w-1.5 rounded-full ${style.dot}`}
+                                  />
+                                  {response.statusCode}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  {response.description}
+                                </span>
+                              </div>
+                              {response.example && (
+                                <CodeBlock
+                                  code={response.example}
+                                  language="json"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error Codes */}
+                  {documentation.errorCodes &&
+                    documentation.errorCodes.length > 0 && (
+                      <div className="space-y-3">
+                        <SectionHeader icon={AlertCircle} title="Error Codes" />
+                        <div className="rounded-lg border border-border/60 overflow-hidden bg-card divide-y divide-border/50">
+                          {documentation.errorCodes.map((err, idx) => (
+                            <div
+                              key={idx}
+                              className="grid grid-cols-[80px_1fr] gap-4 px-4 py-3"
+                            >
+                              <code className="text-xs font-bold font-mono text-red-500 self-start pt-0.5">
+                                {err.code}
+                              </code>
+                              <div className="space-y-0.5">
+                                <p className="text-xs font-semibold">
+                                  {err.message}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {err.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          )}
+
+          {/* Examples Tab */}
+          {(documentation.examples?.length ?? 0) > 0 && (
+            <TabsContent
+              value="examples"
+              className="flex-1 overflow-hidden mt-0"
+            >
+              <ScrollArea className="h-full">
+                <div className="px-6 py-5 space-y-6">
+                  {documentation.examples!.map((example, idx) => (
+                    <div key={idx} className="space-y-3">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">
+                          {example.title}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {example.description}
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Request
+                        </p>
+                        <CodeBlock code={example.request} language="bash" />
+                      </div>
+                      {example.response && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Response
+                          </p>
+                          <CodeBlock code={example.response} language="json" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          )}
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
