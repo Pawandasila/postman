@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
   Clock, 
   Trash2, 
@@ -21,6 +20,25 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import HistoryDetailModal from "./history-detail-modal";
 
+interface HistoryEntry {
+  id: string;
+  method: string;
+  requestName: string;
+  url: string;
+  statusCode?: number;
+  statusText?: string;
+  responseTime?: number;
+  responseSize?: number;
+  executedAt: string;
+  expiresAt: string;
+  workspaceName: string;
+  collectionName?: string;
+  headers?: unknown;
+  params?: unknown;
+  body?: unknown;
+  response?: unknown;
+}
+
 interface HistoryListProps {
   workspaceId?: string;
 }
@@ -28,7 +46,7 @@ interface HistoryListProps {
 const HistoryList = ({ workspaceId }: HistoryListProps) => {
   const { data, isLoading, refetch } = useRequestHistory(workspaceId);
   const { mutate: clearHistory, isPending: isClearing } = useClearHistory();
-  const [selectedHistory, setSelectedHistory] = useState<any>(null);
+  const [selectedHistory, setSelectedHistory] = useState<HistoryEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClearHistory = () => {
@@ -42,7 +60,7 @@ const HistoryList = ({ workspaceId }: HistoryListProps) => {
     });
   };
 
-  const handleHistoryClick = (entry: any) => {
+  const handleHistoryClick = (entry: HistoryEntry) => {
     setSelectedHistory(entry);
     setIsModalOpen(true);
   };
@@ -168,7 +186,7 @@ const HistoryList = ({ workspaceId }: HistoryListProps) => {
                   <span>TODAY</span>
                 </div>
                 <div className="space-y-2">
-                  {history.today.map((entry: any) => (
+                  {history.today.map((entry: HistoryEntry) => (
                     <HistoryCard
                       key={entry.id}
                       entry={entry}
@@ -189,7 +207,7 @@ const HistoryList = ({ workspaceId }: HistoryListProps) => {
                   <span>EARLIER</span>
                 </div>
                 <div className="space-y-2">
-                  {history.older.map((entry: any) => (
+                  {history.older.map((entry: HistoryEntry) => (
                     <HistoryCard
                       key={entry.id}
                       entry={entry}
@@ -216,7 +234,7 @@ const HistoryList = ({ workspaceId }: HistoryListProps) => {
 };
 
 interface HistoryCardProps {
-  entry: any;
+  entry: HistoryEntry;
   getMethodColor: (method: string) => string;
   getStatusColor: (status?: number) => string;
   onClick: () => void;

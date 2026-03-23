@@ -50,7 +50,7 @@ const SignUpPage = () => {
         callbackURL: "/",
       });
       toast.success("Redirecting to Google...");
-    } catch (error) {
+    } catch {
       toast.error("Failed to sign in with Google");
       setIsGoogleLoading(false);
     }
@@ -64,7 +64,7 @@ const SignUpPage = () => {
         callbackURL: "/",
       });
       toast.success("Redirecting to GitHub...");
-    } catch (error) {
+    } catch {
       toast.error("Failed to sign in with GitHub");
       setIsGithubLoading(false);
     }

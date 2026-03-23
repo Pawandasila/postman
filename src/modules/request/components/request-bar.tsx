@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { RequestTab } from "../store/useRequestStore";
+import { Prisma } from "@prisma/client";
 
 import {
   Select,
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Send, Loader2, Check, AlertCircle } from "lucide-react";
 import { useRunRequest } from "../hooks/Request";
 import { toast } from "sonner";
@@ -42,7 +42,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
   const { selectedWorkspace } = useWorkspaceStore();
   const { triggerRefetch } = useHistoryStore();
 
-  const { mutateAsync, isPending, isError } = useRunRequest(tab);
+  const { mutateAsync } = useRunRequest(tab);
 
   const requestMethodConfig: Record<
     string,
@@ -119,18 +119,25 @@ const RequestBar = ({ tab, updateTab }: Props) => {
       const res = await mutateAsync();
       const responseTime = Date.now() - startTime;
 
-      if (selectedWorkspace && res?.success && res.requestRun && tab.requestId) {
+      if (
+        selectedWorkspace &&
+        res?.success &&
+        res.requestRun &&
+        tab.requestId
+      ) {
         try {
-          const parseJsonSafely = (data: any): any => {
+          const parseJsonSafely = (
+            data: unknown,
+          ): Prisma.InputJsonValue | undefined => {
             if (!data) return undefined;
             if (typeof data === "string") {
               try {
-                return JSON.parse(data);
+                return JSON.parse(data) as Prisma.InputJsonValue;
               } catch {
                 return undefined;
               }
             }
-            return data;
+            return data as Prisma.InputJsonValue;
           };
 
           const result = await saveRequestToHistory({
@@ -163,7 +170,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
         description: `${tab.method} ${tab.url}`,
         duration: 3000,
       });
-    } catch (error) {
+    } catch {
       toast.error("Failed to send request.", {
         description: "Please check your network connection and try again.",
       });
@@ -175,7 +182,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
   useEffect(() => {
     try {
       localStorage.setItem("pb_auto_run", JSON.stringify(autoRun));
-    } catch { }
+    } catch {}
   }, [autoRun]);
 
   useEffect(() => {
@@ -214,7 +221,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
                 currentMethod.bg,
                 currentMethod.text,
                 currentMethod.border,
-                "hover:brightness-110 transition-all hover:shadow-md"
+                "hover:brightness-110 transition-all hover:shadow-md",
               )}
             >
               <SelectValue />
@@ -271,7 +278,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
             "flex-1 flex items-center gap-2 h-[40px] rounded-lg border-2 bg-background px-4 shadow-sm transition-all duration-200",
             isUrlFocused
               ? "border-primary/60 shadow-md ring-2 ring-primary/20"
-              : "border-border hover:border-primary/40"
+              : "border-border hover:border-primary/40",
           )}
         >
           <Input
@@ -303,7 +310,10 @@ const RequestBar = ({ tab, updateTab }: Props) => {
         {/* Auto-run toggle (desktop) */}
         <div className="hidden md:flex items-center gap-2 px-2">
           <span className="text-xs text-muted-foreground">Auto-run</span>
-          <Switch checked={autoRun} onCheckedChange={(v) => setAutoRun(Boolean(v))} />
+          <Switch
+            checked={autoRun}
+            onCheckedChange={(v) => setAutoRun(Boolean(v))}
+          />
         </div>
 
         <Button
@@ -314,7 +324,7 @@ const RequestBar = ({ tab, updateTab }: Props) => {
             "h-[40px] px-8 rounded-lg font-bold text-sm transition-all duration-200 flex-shrink-0",
             "bg-primary hover:bg-primary/90 text-primary-foreground",
             "disabled:opacity-50 disabled:cursor-not-allowed",
-            "shadow-sm hover:shadow-md hover:brightness-110"
+            "shadow-sm hover:shadow-md hover:brightness-110",
           )}
         >
           {isSending ? (
@@ -341,16 +351,23 @@ const RequestBar = ({ tab, updateTab }: Props) => {
       {/* Auto-run toggle (mobile view) */}
       <div className="mt-2 flex md:hidden items-center gap-2 px-2">
         <span className="text-xs text-muted-foreground">Auto-run</span>
-        <Switch checked={autoRun} onCheckedChange={(v) => setAutoRun(Boolean(v))} />
+        <Switch
+          checked={autoRun}
+          onCheckedChange={(v) => setAutoRun(Boolean(v))}
+        />
       </div>
 
       {(!tab.requestId || tab.unsavedChanges) && isValidUrl && (
         <div className="mt-3 px-3 py-2 text-xs rounded-md border bg-amber-50/70 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 flex items-center gap-2">
           <span className="font-medium">Unsaved request.</span>
           <span>Press</span>
-          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">Ctrl</kbd>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">
+            Ctrl
+          </kbd>
           <span>+</span>
-          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">S</kbd>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground/80 font-mono text-[10px] border border-border">
+            S
+          </kbd>
           <span>to save it.</span>
         </div>
       )}

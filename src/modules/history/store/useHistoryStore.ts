@@ -1,18 +1,5 @@
 import { create } from "zustand";
 
-interface HistoryEntry {
-  id: string;
-  requestName: string;
-  method: string;
-  url: string;
-  workspaceName: string;
-  collectionName?: string;
-  statusCode?: number;
-  statusText?: string;
-  responseTime?: number;
-  executedAt: Date;
-}
-
 interface HistoryStore {
   shouldRefetch: boolean;
   triggerRefetch: () => void;

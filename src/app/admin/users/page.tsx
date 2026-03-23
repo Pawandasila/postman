@@ -45,8 +45,8 @@ export default function UsersPage() {
       }
 
       setUsers(data.users);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }

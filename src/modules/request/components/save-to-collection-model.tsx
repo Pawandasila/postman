@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import { useAddRequestToCollection } from "@/modules/request/hooks/Request";
 import { REST_METHOD } from "@prisma/client";
 
-import { useWorkspaceStore } from "@/modules/Layout/Store";
-import { useCollections } from "@/modules/collections/hooks/collection";
 import Modal from "@/components/ui/model";
 
 const SaveRequestToCollectionModal = ({
@@ -25,9 +23,8 @@ const SaveRequestToCollectionModal = ({
   const [url, setUrl] = useState("https://echo.hoppscotch.io");
   const [method, setMethod] = useState<REST_METHOD>(REST_METHOD.GET);
   const [name, setName] = useState(initialName);
-  const { selectedWorkspace } = useWorkspaceStore();
 
-    const {data:collections , isLoading, isError} = useCollections(selectedWorkspace?.id!);
+
   const { mutateAsync, isPending } = useAddRequestToCollection(collectionId);
 
   const requestColorMap: Record<REST_METHOD, string> = {

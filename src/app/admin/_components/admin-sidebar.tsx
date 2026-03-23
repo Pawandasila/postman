@@ -8,7 +8,6 @@ import {
   Activity,
   Settings,
   BarChart3,
-  Shield,
   Database,
   LogOut,
 } from "lucide-react";
@@ -23,9 +22,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";

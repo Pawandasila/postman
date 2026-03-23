@@ -20,7 +20,7 @@ export default function PlaygroundPage() {
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  const {mutateAsync, isPending} = useSaveRequest(activeTab?.requestId!);
+  const { mutateAsync } = useSaveRequest(activeTab?.requestId || "");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showAddRequestModal, setShowAddRequestModal] = useState(false);
 

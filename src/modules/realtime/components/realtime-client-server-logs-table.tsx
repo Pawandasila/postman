@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useWsStore } from "../hooks/useWs";
 import {
   ChevronUp,
@@ -91,8 +91,8 @@ const RealtimeClientServerLogsTable = () => {
       selectedMessageIndex === -1
         ? 0
         : selectedMessageIndex + 1 < messages.length
-        ? selectedMessageIndex + 1
-        : -1;
+          ? selectedMessageIndex + 1
+          : -1;
 
     setSelectedMessageIndex(newIndex);
 
@@ -127,7 +127,7 @@ const RealtimeClientServerLogsTable = () => {
     }).format(timestamp);
   };
 
-  const formatMessageData = (data: any) => {
+  const formatMessageData = (data: unknown) => {
     if (typeof data === "string") {
       try {
         return JSON.stringify(JSON.parse(data), null, 2);
@@ -291,7 +291,7 @@ const RealtimeClientServerLogsTable = () => {
                       : "border-border bg-card hover:bg-muted/30",
                     message.type === "sent"
                       ? "border-l-4 border-l-blue-500"
-                      : "border-l-4 border-l-emerald-500"
+                      : "border-l-4 border-l-emerald-500",
                   )}
                   onClick={() => handleRowClick(originalIndex)}
                 >
@@ -304,7 +304,7 @@ const RealtimeClientServerLogsTable = () => {
                             "text-sm font-medium capitalize",
                             message.type === "sent"
                               ? "text-blue-600 dark:text-blue-400"
-                              : "text-emerald-600 dark:text-emerald-400"
+                              : "text-emerald-600 dark:text-emerald-400",
                           )}
                         >
                           {message.type}
@@ -326,7 +326,7 @@ const RealtimeClientServerLogsTable = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           copyToClipboard(
-                            message.raw || formatMessageData(message.data)
+                            message.raw || formatMessageData(message.data),
                           );
                         }}
                         className="h-6 w-6 p-0 text-zinc-400 hover:text-white"
@@ -363,7 +363,7 @@ const RealtimeClientServerLogsTable = () => {
                         <div
                           className={cn(
                             "font-mono text-xs rounded-lg p-3 overflow-x-auto",
-                            "bg-muted/30 border border-border/30"
+                            "bg-muted/30 border border-border/30",
                           )}
                         >
                           <pre className="whitespace-pre-wrap break-words text-muted-foreground">

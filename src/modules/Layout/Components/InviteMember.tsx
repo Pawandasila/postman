@@ -59,7 +59,7 @@ const InviteMember = () => {
         setInviteLink("");
         toast.error(response?.message || "Failed to generate invite link");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to generate invite link");
     }
   };
@@ -135,7 +135,11 @@ const InviteMember = () => {
                   </div>
                 </div>
               ) : workspaceMembers && workspaceMembers.length > 0 ? (
-                workspaceMembers.map((member: any) => (
+                workspaceMembers.map((member: {
+                  id: string;
+                  user: { name: string | null; email: string | null; image: string | null };
+                  role: string;
+                }) => (
                   <div
                     key={member.id}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"

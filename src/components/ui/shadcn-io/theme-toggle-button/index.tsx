@@ -211,7 +211,7 @@ export const ThemeToggleButton = ({
 export const useThemeTransition = () => {
   const startTransition = useCallback((updateFn: () => void) => {
     if ('startViewTransition' in document) {
-      (document as any).startViewTransition(updateFn);
+      (document as unknown as { startViewTransition: (updateFn: () => void) => void }).startViewTransition(updateFn);
     } else {
       updateFn();
     }

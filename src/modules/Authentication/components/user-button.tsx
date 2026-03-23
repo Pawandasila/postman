@@ -40,7 +40,6 @@ interface UserButtonProps {
 
 export default function UserButton({
   user,
-  onLogout,
   onSettings,
   onProfile,
   onBilling,
@@ -196,8 +195,8 @@ export default function UserButton({
             size === "sm"
               ? "h-9 px-2"
               : size === "lg"
-              ? "h-12 px-3"
-              : "h-10 px-2"
+                ? "h-12 px-3"
+                : "h-10 px-2"
           } rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border`}
           disabled={isLoading}
         >
@@ -242,10 +241,10 @@ export default function UserButton({
           )}
 
           <Badge
-            variant={'secondary'}
+            variant={"secondary"}
             className="absolute -top-1 -right-1 h-5 px-1.5 text-[10px] font-semibold"
           >
-            {user?.role === 'ADMIN' ? 'Admin' : 'User'}
+            {user?.role === "ADMIN" ? "Admin" : "User"}
           </Badge>
         </Button>
       </DropdownMenuTrigger>

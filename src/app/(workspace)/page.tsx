@@ -22,8 +22,8 @@ import { useState } from "react";
 
 const Page = () => {
   const { selectedWorkspace } = useWorkspaceStore();
-  const { data: currentWorkspace, isLoading } = useGetWorkspace(selectedWorkspace?.id!);
-  const { data: collectionsResponse } = useCollections(selectedWorkspace?.id!);
+  const { data: currentWorkspace, isLoading } = useGetWorkspace(selectedWorkspace?.id || '');
+  const { data: collectionsResponse } = useCollections(selectedWorkspace?.id || '');
   const [isAddRequestOpen, setIsAddRequestOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
@@ -167,7 +167,7 @@ const Page = () => {
                   </div>
                   
                   <div className="border-t pt-6">
-                    <h4 className="text-sm font-medium mb-3">What you'll get:</h4>
+                    <h4 className="text-sm font-medium mb-3">What you&apos;ll get:</h4>
                     <ul className="space-y-2 text-xs text-muted-foreground">
                       <li>• Complete endpoint documentation with examples</li>
                       <li>• Request/Response schemas and descriptions</li>

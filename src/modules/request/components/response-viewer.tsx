@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import MonacoEditor from "@monaco-editor/react";
@@ -92,7 +91,7 @@ const ResponseViewer = ({ responseData }: Props) => {
     try {
       await navigator.clipboard.writeText(text);
       toast.success(`${label} copied to clipboard!`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to copy to clipboard");
     }
   };
@@ -109,14 +108,14 @@ const ResponseViewer = ({ responseData }: Props) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success("Response downloaded successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to download response");
     }
   };
 
   // Memoize parsed response data
-  const { responseBody, formattedJsonString, rawBody, isJson } = useMemo(() => {
-    let body: any = {};
+  const { formattedJsonString, isJson } = useMemo(() => {
+    let body: unknown = {};
     let formatted = "";
     let isJsonResponse = false;
     const raw = responseData?.requestRun?.body;
@@ -129,7 +128,7 @@ const ResponseViewer = ({ responseData }: Props) => {
         body = raw ?? {};
       }
       formatted = JSON.stringify(body, null, 2);
-    } catch (e) {
+    } catch {
       body = raw ?? {};
       formatted = typeof body === "string" ? body : JSON.stringify(body, null, 2);
     }

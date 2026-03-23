@@ -15,7 +15,7 @@ const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>)
     redirect("/sign-in");
   }
 
-  const workspace = await initWorkSpace();  
+  await initWorkSpace();  
   
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">

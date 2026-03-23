@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,7 +36,6 @@ import { cn } from "@/lib/utils";
 import { useGenerateJsonBody } from "@/modules/ai/hooks/aisuggestion";
 
 import { useRequestPlaygroundStore } from "../store/useRequestStore";
-import { useWorkspaceStore } from "@/modules/Layout/Store";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -66,11 +65,10 @@ const BodyEditor: React.FC<BodyEditorProps> = ({
   const [copied, setCopied] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const { selectedWorkspace } = useWorkspaceStore();
 
   const { tabs, activeTabId } = useRequestPlaygroundStore();
 
-  const { mutateAsync, data, isPending, isError } = useGenerateJsonBody();
+  const { mutateAsync, isPending } = useGenerateJsonBody();
 
   const form = useForm<BodyEditorFormData>({
     resolver: zodResolver(bodyEditorSchema),
@@ -108,7 +106,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({
       if (bodyValue) {
         try {
           JSON.parse(bodyValue);
-        } catch (e) {}
+        } catch {}
       }
 
       const result = await mutateAsync({
@@ -135,7 +133,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({
       try {
         const formatted = JSON.stringify(JSON.parse(bodyValue), null, 2);
         form.setValue("body", formatted);
-      } catch (error) {
+      } catch {
         console.error("Invalid JSON format");
       }
     }

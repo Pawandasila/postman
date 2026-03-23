@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useMemo } from "react"
 import { Check, ChevronsUpDown, FolderOpen, LoaderCircle, AlertCircle, Plus } from "lucide-react"
 
 import {
@@ -23,7 +23,9 @@ export default function Workspace() {
   const [isModelOpen, setIsModelOpen] = useState(false);
 
   
-  const workspaces = response?.success ? response.workspaces : [];
+  const workspaces = useMemo(() => {
+    return response?.success ? response.workspaces : [];
+  }, [response]);
 
   
   useEffect(() => {

@@ -18,16 +18,17 @@ import {
   Database,
   Shield,
   ArrowUpRight,
-  ArrowDownRight,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StatsCard } from "./_components/stats-card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
   BarChart,
   Bar,
   XAxis,
@@ -35,14 +36,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  Area,
-  AreaChart,
 } from "recharts";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -82,8 +75,8 @@ export default function AdminDashboard() {
       }
 
       setStats(data.stats);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }
@@ -393,7 +386,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {stats.recentUsers.slice(0, 5).map((user, index) => (
+              {stats.recentUsers.slice(0, 5).map((user) => (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-card/50 border border-border/50 hover:border-primary/30 hover:bg-card/80 transition-all"

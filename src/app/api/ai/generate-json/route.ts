@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!prompt || !method || !endpoint) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -21,23 +21,18 @@ export async function POST(request: NextRequest) {
       context,
     });
 
-    console.log('🔍 AI Agent Result (JSON):', JSON.stringify(result, null, 2));
-
     if (!result.success) {
-      console.error('❌ AI Agent Failed:', result.error);
       return NextResponse.json(
         { error: result.error || "Failed to generate JSON body" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // result.data already contains { jsonBody: {...}, description, reasoning }
-    console.log('✅ Returning JSON body:', result.data);
     return NextResponse.json(result.data);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

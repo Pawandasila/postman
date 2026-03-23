@@ -100,7 +100,7 @@ const DocsPreview = ({ isOpen, onClose, docId, onBack }: DocsPreviewProps) => {
     // Examples
     if (documentation.examples && documentation.examples.length > 0) {
       markdown += `## Examples\n\n`;
-      documentation.examples.forEach((example, index) => {
+      documentation.examples.forEach((example) => {
         markdown += `### ${example.title}\n\n`;
         markdown += `${example.description}\n\n`;
         markdown += `**Request:**\n\n\`\`\`bash\n${example.request}\n\`\`\`\n\n`;
@@ -164,8 +164,8 @@ const DocsPreview = ({ isOpen, onClose, docId, onBack }: DocsPreviewProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="bg-background max-w-6xl max-h-[90vh] p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-background rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={onBack}>
@@ -194,7 +194,7 @@ const DocsPreview = ({ isOpen, onClose, docId, onBack }: DocsPreviewProps) => {
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-180px)]">
+        <ScrollArea className="max-h-[calc(90vh-180px)] bg-background rounded-b-lg">
           <div className="px-6 py-6 space-y-6">
             {/* Endpoint */}
             <div className="space-y-3">

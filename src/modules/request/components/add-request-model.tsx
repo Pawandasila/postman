@@ -29,7 +29,7 @@ const AddRequestModal = ({ isModalOpen, setIsModalOpen }: AddRequestModalProps) 
   const [searchTerm, setSearchTerm] = useState("");
 
   const { selectedWorkspace } = useWorkspaceStore();
-  const { data: collections, isLoading, isError } = useCollections(selectedWorkspace?.id!);
+  const { data: collections, isLoading, isError } = useCollections(selectedWorkspace?.id || "");
   const { mutateAsync, isPending } = useAddRequestToCollection(selectedCollectionId);
   const { addTab } = useRequestPlaygroundStore();
 

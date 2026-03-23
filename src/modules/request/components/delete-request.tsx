@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { REST_METHOD } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";

@@ -5,7 +5,7 @@
 "use server";
 
 import db from "@/lib/db";
-import { currentUser } from "@/modules/Authentication/actions";
+import { Prisma, REST_METHOD } from "@prisma/client";
 import { requirePermission } from "@/lib/workspace-permissions";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -15,10 +15,8 @@ import { PERMISSIONS } from "@/lib/permissions";
 export async function createCollectionWithPermissions(
   workspaceId: string,
   name: string,
-  description?: string
 ) {
   try {
-    
     await requirePermission(PERMISSIONS.COLLECTION_CREATE)(workspaceId);
 
     const collection = await db.collection.create({
@@ -36,7 +34,8 @@ export async function createCollectionWithPermissions(
     console.error("Error creating collection:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to create collection",
+      message:
+        error instanceof Error ? error.message : "Failed to create collection",
     };
   }
 }
@@ -46,10 +45,9 @@ export async function createCollectionWithPermissions(
  */
 export async function updateCollectionWithPermissions(
   collectionId: string,
-  data: { name?: string }
+  data: { name?: string },
 ) {
   try {
-    
     const collection = await db.collection.findUnique({
       where: { id: collectionId },
       select: { workspaceId: true },
@@ -59,8 +57,9 @@ export async function updateCollectionWithPermissions(
       throw new Error("Collection not found");
     }
 
-    
-    await requirePermission(PERMISSIONS.COLLECTION_EDIT)(collection.workspaceId);
+    await requirePermission(PERMISSIONS.COLLECTION_EDIT)(
+      collection.workspaceId,
+    );
 
     const updatedCollection = await db.collection.update({
       where: { id: collectionId },
@@ -75,7 +74,8 @@ export async function updateCollectionWithPermissions(
     console.error("Error updating collection:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to update collection",
+      message:
+        error instanceof Error ? error.message : "Failed to update collection",
     };
   }
 }
@@ -85,7 +85,6 @@ export async function updateCollectionWithPermissions(
  */
 export async function deleteCollectionWithPermissions(collectionId: string) {
   try {
-    
     const collection = await db.collection.findUnique({
       where: { id: collectionId },
       select: { workspaceId: true },
@@ -95,8 +94,9 @@ export async function deleteCollectionWithPermissions(collectionId: string) {
       throw new Error("Collection not found");
     }
 
-    
-    await requirePermission(PERMISSIONS.COLLECTION_DELETE)(collection.workspaceId);
+    await requirePermission(PERMISSIONS.COLLECTION_DELETE)(
+      collection.workspaceId,
+    );
 
     await db.collection.delete({
       where: { id: collectionId },
@@ -110,7 +110,8 @@ export async function deleteCollectionWithPermissions(collectionId: string) {
     console.error("Error deleting collection:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to delete collection",
+      message:
+        error instanceof Error ? error.message : "Failed to delete collection",
     };
   }
 }
@@ -120,10 +121,9 @@ export async function deleteCollectionWithPermissions(collectionId: string) {
  */
 export async function duplicateCollectionWithPermissions(
   collectionId: string,
-  newName?: string
+  newName?: string,
 ) {
   try {
-    
     const collection = await db.collection.findUnique({
       where: { id: collectionId },
       include: {
@@ -135,23 +135,41 @@ export async function duplicateCollectionWithPermissions(
       throw new Error("Collection not found");
     }
 
-    
-    await requirePermission(PERMISSIONS.COLLECTION_DUPLICATE)(collection.workspaceId);
+    await requirePermission(PERMISSIONS.COLLECTION_DUPLICATE)(
+      collection.workspaceId,
+    );
 
-    
     const duplicatedCollection = await db.collection.create({
       data: {
         name: newName || `${collection.name} (Copy)`,
         workspaceId: collection.workspaceId,
         requests: {
-          create: collection.requests.map(request => ({
-            name: request.name,
-            method: request.method,
-            url: request.url,
-            parameters: request.parameters === null ? undefined : (request.parameters as any),
-            headers: request.headers === null ? undefined : (request.headers as any),
-            body: request.body === null ? undefined : (request.body as any),
-          })),
+          create: collection.requests.map(
+            (request: {
+              name: string;
+              method: REST_METHOD;
+              url: string;
+              parameters: Prisma.JsonValue;
+              headers: Prisma.JsonValue;
+              body: Prisma.JsonValue;
+            }) => ({
+              name: request.name,
+              method: request.method,
+              url: request.url,
+              parameters:
+                request.parameters === null
+                  ? Prisma.JsonNull
+                  : (request.parameters as Prisma.InputJsonValue),
+              headers:
+                request.headers === null
+                  ? Prisma.JsonNull
+                  : (request.headers as Prisma.InputJsonValue),
+              body:
+                request.body === null
+                  ? Prisma.JsonNull
+                  : (request.body as Prisma.InputJsonValue),
+            }),
+          ),
         },
       },
       include: {
@@ -167,7 +185,10 @@ export async function duplicateCollectionWithPermissions(
     console.error("Error duplicating collection:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to duplicate collection",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to duplicate collection",
     };
   }
 }
@@ -177,7 +198,6 @@ export async function duplicateCollectionWithPermissions(
  */
 export async function getCollectionsWithPermissions(workspaceId: string) {
   try {
-    
     await requirePermission(PERMISSIONS.COLLECTION_VIEW)(workspaceId);
 
     const collections = await db.collection.findMany({
@@ -192,7 +212,7 @@ export async function getCollectionsWithPermissions(workspaceId: string) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return {
@@ -203,7 +223,8 @@ export async function getCollectionsWithPermissions(workspaceId: string) {
     console.error("Error getting collections:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to get collections",
+      message:
+        error instanceof Error ? error.message : "Failed to get collections",
     };
   }
 }

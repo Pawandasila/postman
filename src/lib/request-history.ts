@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { REST_METHOD } from "@prisma/client";
+import { REST_METHOD, Prisma } from "@prisma/client";
 
 export interface CreateHistoryParams {
   userId: string;
@@ -15,10 +15,10 @@ export interface CreateHistoryParams {
   statusText?: string;
   responseTime?: number;
   responseSize?: number;
-  headers?: Record<string, any>;
-  params?: Record<string, any>;
-  body?: Record<string, any>;
-  response?: Record<string, any>;
+  headers?: Prisma.InputJsonValue;
+  params?: Prisma.InputJsonValue;
+  body?: Prisma.InputJsonValue;
+  response?: Prisma.InputJsonValue;
 }
 
 /**
@@ -63,10 +63,10 @@ export async function getUserRequestHistory(
   options?: {
     workspaceId?: string;
     limit?: number;
-  }
+  },
 ) {
   const now = new Date();
-  
+
   return await db.requestHistory.findMany({
     where: {
       userId,
@@ -87,17 +87,16 @@ export async function getUserRequestHistory(
  */
 export async function getUserRequestHistoryGrouped(
   userId: string,
-  workspaceId?: string
+  workspaceId?: string,
 ) {
-  const now = new Date();
   const history = await getUserRequestHistory(userId, { workspaceId });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const grouped = {
-    today: history.filter((h: any) => h.executedAt >= today),
-    older: history.filter((h: any) => h.executedAt < today),
+    today: history.filter((h) => h.executedAt >= today),
+    older: history.filter((h) => h.executedAt < today),
   };
 
   return grouped;
@@ -109,7 +108,7 @@ export async function getUserRequestHistoryGrouped(
  */
 export async function cleanupExpiredHistory() {
   const now = new Date();
-  
+
   const result = await db.requestHistory.deleteMany({
     where: {
       expiresAt: {
@@ -136,7 +135,10 @@ export async function clearUserHistory(userId: string, workspaceId?: string) {
 /**
  * Get history statistics for a user
  */
-export async function getUserHistoryStats(userId: string, workspaceId?: string) {
+export async function getUserHistoryStats(
+  userId: string,
+  workspaceId?: string,
+) {
   const now = new Date();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -151,7 +153,7 @@ export async function getUserHistoryStats(userId: string, workspaceId?: string) 
         expiresAt: { gt: now },
       },
     }),
-    
+
     // Total non-expired requests
     db.requestHistory.count({
       where: {
@@ -160,7 +162,7 @@ export async function getUserHistoryStats(userId: string, workspaceId?: string) 
         expiresAt: { gt: now },
       },
     }),
-    
+
     // Average response time
     db.requestHistory.aggregate({
       where: {

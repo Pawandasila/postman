@@ -31,7 +31,7 @@ const RealtimeConnectionBar = () => {
     }
 
     const trimmedUrl = url.trim();
-    if (!trimmedUrl.startsWith('ws://') && !trimmedUrl.startsWith('wss://')) {
+    if (!trimmedUrl.startsWith("ws://") && !trimmedUrl.startsWith("wss://")) {
       alert("URL must start with ws:// or wss://");
       return;
     }
@@ -40,21 +40,21 @@ const RealtimeConnectionBar = () => {
       disconnect();
     } else {
       connect(trimmedUrl, {
-        onOpen: (event) => {
+        onOpen: () => {
           console.log("Successfully connected to:", trimmedUrl);
         },
         onClose: (event) => {
           console.log("Disconnected from WebSocket:", {
             code: event.code,
             reason: event.reason,
-            wasClean: event.wasClean
+            wasClean: event.wasClean,
           });
         },
         onError: (error) => {
           console.error("WebSocket connection failed:", {
             url: trimmedUrl,
             timestamp: new Date().toISOString(),
-            error: error
+            error: error,
           });
         },
         onMessage: (event) => {
@@ -72,7 +72,7 @@ const RealtimeConnectionBar = () => {
         onConnect();
       }
     },
-    [onConnect]
+    [onConnect],
   );
 
   const getConnectionColor = () => {
@@ -153,10 +153,10 @@ const RealtimeConnectionBar = () => {
                   status === "connected"
                     ? "bg-emerald-500"
                     : status === "connecting" || status === "reconnecting"
-                    ? "bg-amber-500 animate-pulse"
-                    : status === "error"
-                    ? "bg-red-500"
-                    : "bg-muted-foreground"
+                      ? "bg-amber-500 animate-pulse"
+                      : status === "error"
+                        ? "bg-red-500"
+                        : "bg-muted-foreground",
                 )}
               />
               <span className="text-xs font-medium text-foreground capitalize">
@@ -183,7 +183,7 @@ const RealtimeConnectionBar = () => {
             disabled={status === "connecting" || status === "reconnecting"}
             className={cn(
               "font-medium transition-all duration-200 shadow-sm",
-              getConnectionColor()
+              getConnectionColor(),
             )}
             size="lg"
           >
@@ -201,15 +201,23 @@ const RealtimeConnectionBar = () => {
             <AlertCircle size={16} className="text-destructive flex-shrink-0" />
             <span className="text-sm text-destructive">{error}</span>
           </div>
-          
+
           <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-            <div className="text-xs font-medium text-foreground mb-2">💡 Troubleshooting Tips:</div>
+            <div className="text-xs font-medium text-foreground mb-2">
+              💡 Troubleshooting Tips:
+            </div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Make sure the WebSocket server is running and accessible</li>
+              <li>
+                • Make sure the WebSocket server is running and accessible
+              </li>
               <li>• Check if the URL format is correct (ws:// or wss://)</li>
-              <li>• For secure sites (https://), use wss:// instead of ws://</li>
+              <li>
+                • For secure sites (https://), use wss:// instead of ws://
+              </li>
               <li>• Verify the server accepts connections from your domain</li>
-              <li>• Try a public WebSocket echo server: wss://echo.websocket.org</li>
+              <li>
+                • Try a public WebSocket echo server: wss://echo.websocket.org
+              </li>
             </ul>
           </div>
         </div>

@@ -35,7 +35,7 @@ type PlaygroundState = {
   setActiveTab: (id: string) => void;
   updateTab: (id: string, data: Partial<RequestTab>) => void;
   markUnsaved: (id: string, value: boolean) => void;
-  openRequestTab: (req: any) => void; // 👈 new
+  openRequestTab: (req: { id: string; name?: string; method: string; url: string; body?: string; headers?: string; parameters?: string; collectionId?: string; workspaceId?: string }) => void; // 👈 new
   updateTabFromSavedRequest: (tabId: string, savedRequest: SavedRequest) => void;
   responseViewerData:ResponseData | null;
   setResponseViewerData: (data:ResponseData) => void

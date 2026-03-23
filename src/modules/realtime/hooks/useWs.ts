@@ -11,7 +11,7 @@ type ConnectionStatus =
 type WsMessage = {
   id: string;
   type: "sent" | "received";
-  data: any;
+  data: unknown;
   timestamp: Date;
   raw?: string;
 };
@@ -105,7 +105,7 @@ export const useWsStore = create<WsStore>()(
       const state = get();
 
       // Validate URL format
-      if (!url || typeof url !== 'string') {
+      if (!url || typeof url !== "string") {
         const error = "WebSocket URL is required";
         set({
           status: "error",
@@ -117,7 +117,7 @@ export const useWsStore = create<WsStore>()(
 
       // Normalize and validate URL
       const trimmedUrl = url.trim();
-      if (!trimmedUrl.startsWith('ws://') && !trimmedUrl.startsWith('wss://')) {
+      if (!trimmedUrl.startsWith("ws://") && !trimmedUrl.startsWith("wss://")) {
         const error = "URL must start with ws:// or wss://";
         set({
           status: "error",
@@ -128,8 +128,12 @@ export const useWsStore = create<WsStore>()(
       }
 
       // Check for mixed content issues
-      if (trimmedUrl.startsWith('ws://') && window.location.protocol === 'https:') {
-        const error = "Cannot connect to insecure WebSocket (ws://) from secure page (https://)";
+      if (
+        trimmedUrl.startsWith("ws://") &&
+        window.location.protocol === "https:"
+      ) {
+        const error =
+          "Cannot connect to insecure WebSocket (ws://) from secure page (https://)";
         set({
           status: "error",
           error,
@@ -161,7 +165,6 @@ export const useWsStore = create<WsStore>()(
         const ws = new WebSocket(trimmedUrl);
 
         ws.onopen = (event) => {
-          console.log("WebSocket connected to:", url);
           set({
             ws,
             status: "connected",
@@ -173,8 +176,6 @@ export const useWsStore = create<WsStore>()(
         };
 
         ws.onmessage = (event) => {
-          console.log("WebSocket message received:", event.data);
-
           // Add to message history
           get().addMessage({
             type: "received",
@@ -186,8 +187,6 @@ export const useWsStore = create<WsStore>()(
         };
 
         ws.onclose = (event) => {
-          console.log("WebSocket closed:", event.code, event.reason);
-
           set({ ws: null });
           options.onClose?.(event);
 
@@ -204,21 +203,25 @@ export const useWsStore = create<WsStore>()(
             url,
             event: event.type,
             readyState: ws.readyState,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
-          
+
           let errorMessage = "Connection error occurred";
-          
-          if (url.startsWith('ws://') && window.location.protocol === 'https:') {
-            errorMessage = "Cannot connect to insecure WebSocket (ws://) from secure page (https://)";
-          } else if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+
+          if (
+            url.startsWith("ws://") &&
+            window.location.protocol === "https:"
+          ) {
+            errorMessage =
+              "Cannot connect to insecure WebSocket (ws://) from secure page (https://)";
+          } else if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
             errorMessage = "Invalid WebSocket URL format. Use ws:// or wss://";
           } else if (ws.readyState === WebSocket.CONNECTING) {
             errorMessage = "Connection timeout - unable to reach server";
           } else {
             errorMessage = "Failed to establish WebSocket connection";
           }
-          
+
           set({
             status: "error",
             error: errorMessage,
@@ -338,7 +341,7 @@ export const useWsStore = create<WsStore>()(
       console.log(
         `Reconnecting in ${delay}ms (attempt ${state.reconnectAttempts + 1}/${
           state.maxReconnectAttempts
-        })`
+        })`,
       );
 
       const timeoutId = window.setTimeout(() => {
@@ -355,5 +358,5 @@ export const useWsStore = create<WsStore>()(
       const ws = get().ws;
       return ws ? ws.readyState : WebSocket.CLOSED;
     },
-  }))
+  })),
 );

@@ -3,7 +3,7 @@
 import { createRequestHistory } from "@/lib/request-history";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { REST_METHOD } from "@prisma/client";
+import { REST_METHOD, Prisma } from "@prisma/client";
 
 export interface SaveHistoryParams {
   workspaceId: string;
@@ -18,10 +18,10 @@ export interface SaveHistoryParams {
   statusText?: string;
   responseTime?: number;
   responseSize?: number;
-  headers?: Record<string, any>;
-  params?: Record<string, any>;
-  body?: Record<string, any>;
-  response?: Record<string, any>;
+  headers?: Prisma.InputJsonValue;
+  params?: Prisma.InputJsonValue;
+  body?: Prisma.InputJsonValue;
+  response?: Prisma.InputJsonValue;
 }
 
 export async function saveRequestToHistory(params: SaveHistoryParams) {

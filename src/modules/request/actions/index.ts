@@ -16,7 +16,7 @@ export type Request = {
 
 export const addRequestToCollection = async (
   request: Request,
-  collectionId: string
+  collectionId: string,
 ) => {
   const newRequest = await db.request.create({
     data: {
@@ -93,13 +93,12 @@ export async function sendRequest(req: {
   url: string;
   headers?: Record<string, string>;
   parameters?: Record<string, string>;
-  body?: any;
+  body?: unknown;
 }) {
-
   const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json; charset=UTF-8',
-    'Accept': 'application/json',
-    'User-Agent': 'PostBoy/1.0',
+    "Content-Type": "application/json; charset=UTF-8",
+    Accept: "application/json",
+    "User-Agent": "PostBoy/1.0",
   };
 
   const mergedHeaders = {
@@ -107,7 +106,7 @@ export async function sendRequest(req: {
     ...(req.headers || {}),
   };
 
-  console.log('sendRequest called with:', {
+  console.log("sendRequest called with:", {
     method: req.method,
     url: req.url,
     originalHeaders: req.headers,
@@ -130,7 +129,7 @@ export async function sendRequest(req: {
     const response = await axios(config);
     const end = performance.now();
 
-    console.log('Axios response received:', {
+    console.log("Axios response received:", {
       status: response.status,
       statusText: response.statusText,
       data: response.data,
@@ -142,23 +141,24 @@ export async function sendRequest(req: {
       response.headers["content-length"] ||
       new TextEncoder().encode(JSON.stringify(response.data)).length;
 
-
     let headersObject: Record<string, string> = {};
     try {
-      if (response.headers && typeof response.headers === 'object') {
-
-        headersObject = Object.keys(response.headers).reduce((acc, key) => {
-          const value = response.headers[key];
-          if (typeof value === 'string') {
-            acc[key] = value;
-          } else if (value !== undefined && value !== null) {
-            acc[key] = String(value);
-          }
-          return acc;
-        }, {} as Record<string, string>);
+      if (response.headers && typeof response.headers === "object") {
+        headersObject = Object.keys(response.headers).reduce(
+          (acc, key) => {
+            const value = response.headers[key];
+            if (typeof value === "string") {
+              acc[key] = value;
+            } else if (value !== undefined && value !== null) {
+              acc[key] = String(value);
+            }
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
       }
     } catch (e) {
-      console.error('Failed to parse response headers:', e);
+      console.error("Failed to parse response headers:", e);
       headersObject = {};
     }
 
@@ -170,11 +170,12 @@ export async function sendRequest(req: {
       responseTime: Math.round(duration),
       size: size,
     };
-  } catch (error: any) {
+  } catch (error) {
     const end = performance.now();
+    const err = error as Error;
 
     return {
-      error: error.message,
+      error: err.message,
       duration: Math.round(end - start),
     };
   }
@@ -189,8 +190,8 @@ export async function runUnsavedRequest(req: Request) {
       try {
         parsedHeaders = JSON.parse(req.headers);
       } catch (e) {
-        console.error('Failed to parse headers in unsaved request:', e);
-        console.error('Headers value:', req.headers);
+        console.error("Failed to parse headers in unsaved request:", e);
+        console.error("Headers value:", req.headers);
         parsedHeaders = undefined;
       }
     }
@@ -199,25 +200,23 @@ export async function runUnsavedRequest(req: Request) {
       try {
         parsedParameters = JSON.parse(req.parameters);
       } catch (e) {
-        console.error('Failed to parse parameters in unsaved request:', e);
-        console.error('Parameters value:', req.parameters);
+        console.error("Failed to parse parameters in unsaved request:", e);
+        console.error("Parameters value:", req.parameters);
         parsedParameters = undefined;
       }
     }
 
-
-    let parsedBody: any = undefined;
+    let parsedBody: unknown = undefined;
     if (req.body) {
       try {
-
-        parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      } catch (e) {
-
+        parsedBody =
+          typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+      } catch {
         parsedBody = req.body;
       }
     }
 
-    console.log('Request body being sent:', {
+    console.log("Request body being sent:", {
       originalBody: req.body,
       parsedBody: parsedBody,
     });
@@ -250,7 +249,8 @@ export async function runUnsavedRequest(req: Request) {
       },
       result,
     };
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error;
     return {
       success: false,
       requestRun: {
@@ -259,11 +259,11 @@ export async function runUnsavedRequest(req: Request) {
         status: 0,
         statusText: "Failed",
         headers: {},
-        body: error.message || "Unknown error",
+        body: err.message || "Unknown error",
         durationMs: 0,
         createdAt: new Date(),
       },
-      error: error.message || "Unknown error",
+      error: err.message || "Unknown error",
     };
   }
 }
@@ -286,27 +286,27 @@ export async function run(requestId: string, overrides?: Request) {
 
     try {
       if (requestData.headers) {
-        if (typeof requestData.headers === 'string') {
+        if (typeof requestData.headers === "string") {
           parsedHeaders = JSON.parse(requestData.headers);
-        } else if (typeof requestData.headers === 'object') {
+        } else if (typeof requestData.headers === "object") {
           parsedHeaders = requestData.headers as Record<string, string>;
         }
       }
     } catch (e) {
-      console.error('Failed to parse request headers:', e);
+      console.error("Failed to parse request headers:", e);
       parsedHeaders = undefined;
     }
 
     try {
       if (requestData.parameters) {
-        if (typeof requestData.parameters === 'string') {
+        if (typeof requestData.parameters === "string") {
           parsedParameters = JSON.parse(requestData.parameters);
-        } else if (typeof requestData.parameters === 'object') {
+        } else if (typeof requestData.parameters === "object") {
           parsedParameters = requestData.parameters as Record<string, string>;
         }
       }
     } catch (e) {
-      console.error('Failed to parse request parameters:', e);
+      console.error("Failed to parse request parameters:", e);
       parsedParameters = undefined;
     }
 
@@ -325,7 +325,9 @@ export async function run(requestId: string, overrides?: Request) {
         requestId: request.id,
         status: result.status ?? 0,
         statusText: result.statusText || (result?.error ? "Error" : null),
-        headers: result.headers ? JSON.stringify(result.headers) : JSON.stringify({}),
+        headers: result.headers
+          ? JSON.stringify(result.headers)
+          : JSON.stringify({}),
         body: result?.data
           ? typeof result.data === "string"
             ? result.data
@@ -350,7 +352,8 @@ export async function run(requestId: string, overrides?: Request) {
       requestRun,
       result,
     };
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error;
     try {
       const failedRun = await db.requestRun.create({
         data: {
@@ -358,21 +361,24 @@ export async function run(requestId: string, overrides?: Request) {
           status: 0,
           statusText: "Failed",
           headers: JSON.stringify({}),
-          body: error.message || "Unknown error",
+          body: err.message || "Unknown error",
           durationMs: 0,
         },
       });
       return {
         success: false,
         requestRun: failedRun,
-        error: error.message || "Unknown error",
+        error: err.message || "Unknown error",
       };
-    } catch (dbError: any) {
+    } catch (dbError) {
+      const dbErr = dbError as Error;
       return {
         success: false,
-        error: `Request failed: ${error.message || "Unknown error"
-          }. Additionally, failed to log the request run.   Error: ${dbError.message || "Unknown error"
-          }`,
+        error: `Request failed: ${
+          err.message || "Unknown error"
+        }. Additionally, failed to log the request run.   Error: ${
+          dbErr.message || "Unknown error"
+        }`,
       };
     }
   }

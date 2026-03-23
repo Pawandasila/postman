@@ -8,8 +8,8 @@ export interface Settings {
   mode: Mode;
   theme: {
     styles?: {
-      light: Record<string, any>;
-      dark: Record<string, any>;
+      light: Record<string, unknown>;
+      dark: Record<string, unknown>;
     };
   };
 }

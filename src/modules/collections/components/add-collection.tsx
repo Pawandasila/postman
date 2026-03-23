@@ -1,15 +1,13 @@
 "use client";
 
 import Modal from "@/components/ui/model";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Folder, Plus, Search, X } from "lucide-react";
-import React, { useState, useEffect, act } from "react";
+import { Folder, Search } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { REST_METHOD } from "@prisma/client";
 import { useWorkspaceStore } from "@/modules/Layout/Store";
 import { useCollections } from "../hooks/collection";
 import { Button } from "@/components/ui/button";
-
 
 const SaveRequestToCollectionModal = ({
   isModalOpen,
@@ -20,7 +18,7 @@ const SaveRequestToCollectionModal = ({
     method: REST_METHOD.GET,
   },
   initialName = "Untitled",
-  collectionId
+  collectionId,
 }: {
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
@@ -30,19 +28,26 @@ const SaveRequestToCollectionModal = ({
     url: string;
   };
   initialName?: string;
-  collectionId?: string
+  collectionId?: string;
 }) => {
   const [requestName, setRequestName] = useState(initialName);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string>(collectionId || "");
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>(
+    collectionId || "",
+  );
   const [searchTerm, setSearchTerm] = useState("");
 
-  
   const { selectedWorkspace } = useWorkspaceStore();
-  const { data: collectionsResponse, isLoading, isError } = useCollections(selectedWorkspace?.id!);
+  const {
+    data: collectionsResponse,
+    isLoading,
+    isError,
+  } = useCollections(selectedWorkspace?.id || "");
   // const { mutateAsync, isPending } = useAddRequestToCollection(selectedCollectionId);
 
-  const collections = collectionsResponse?.collections || [];
-
+  const collections = useMemo(
+    () => collectionsResponse?.collections || [],
+    [collectionsResponse],
+  );
 
   useEffect(() => {
     if (isModalOpen) {
@@ -50,19 +55,13 @@ const SaveRequestToCollectionModal = ({
       setSelectedCollectionId(collectionId || "");
       setSearchTerm("");
     }
-  }, [isModalOpen, requestData.name, initialName]);
-
+  }, [isModalOpen, requestData.name, initialName, collectionId]);
 
   useEffect(() => {
-    if (!isModalOpen) return;
-    if (collectionId) return; 
-    if (!selectedCollectionId && collections && collections.length > 0) {
-      setSelectedCollectionId(collections[0].id);
+    if (collectionId) {
+      setSelectedCollectionId(collectionId);
     }
-  }, [isModalOpen, collections, collectionId, selectedCollectionId]);
-
-
-  
+  }, [collectionId]);
 
   const requestColorMap: Record<REST_METHOD, string> = {
     [REST_METHOD.GET]: "text-green-500",
@@ -70,15 +69,16 @@ const SaveRequestToCollectionModal = ({
     [REST_METHOD.PUT]: "text-yellow-500",
     [REST_METHOD.DELETE]: "text-red-500",
     [REST_METHOD.PATCH]: "text-orange-500",
- 
   };
 
+  const filteredCollections =
+    collections?.filter((collection) =>
+      collection.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    ) || [];
 
-  const filteredCollections = collections?.filter(collection =>
-    collection.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const selectedCollection = collections?.find(c => c.id === selectedCollectionId);
+  const selectedCollection = collections?.find(
+    (c) => c.id === selectedCollectionId,
+  );
 
   const handleSubmit = async () => {
     if (!requestName.trim()) {
@@ -90,7 +90,7 @@ const SaveRequestToCollectionModal = ({
       toast.error("Please select a collection");
       return;
     }
-    
+
     try {
       // TODO: Implement request saving when request hooks are ready
       // await mutateAsync({
@@ -98,8 +98,10 @@ const SaveRequestToCollectionModal = ({
       //   method: requestData.method,
       //   name: requestName.trim(),
       // });
-     
-      toast.success(`Request will be saved to "${selectedCollection?.name}" collection`);
+
+      toast.success(
+        `Request will be saved to "${selectedCollection?.name}" collection`,
+      );
       setIsModalOpen(false);
     } catch (err) {
       toast.error("Failed to save request to collection");
@@ -118,9 +120,10 @@ const SaveRequestToCollectionModal = ({
       submitVariant="default"
     >
       <div className="space-y-4">
-       
         <div>
-          <label className="block text-sm font-medium mb-2 text-zinc-200">Request name</label>
+          <label className="block text-sm font-medium mb-2 text-zinc-200">
+            Request name
+          </label>
           <div className="relative">
             <input
               className="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-20"
@@ -130,7 +133,9 @@ const SaveRequestToCollectionModal = ({
               autoFocus
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <span className={`text-xs font-bold px-2 py-1 rounded ${requestColorMap[requestData.method]} bg-zinc-700`}>
+              <span
+                className={`text-xs font-bold px-2 py-1 rounded ${requestColorMap[requestData.method]} bg-zinc-700`}
+              >
                 {requestData.method}
               </span>
             </div>
@@ -138,9 +143,10 @@ const SaveRequestToCollectionModal = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-zinc-200">Select location</label>
-          
-   
+          <label className="block text-sm font-medium mb-2 text-zinc-200">
+            Select location
+          </label>
+
           <div className="flex items-center space-x-2 text-sm text-zinc-400 mb-3">
             <span>{selectedWorkspace?.name || "workspace"}</span>
             <span>›</span>
@@ -159,12 +165,13 @@ const SaveRequestToCollectionModal = ({
             />
           </div>
 
-
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-5 h-5 border-2 border-zinc-600 border-t-indigo-500 rounded-full animate-spin"></div>
-                <span className="ml-2 text-sm text-zinc-400">Loading collections...</span>
+                <span className="ml-2 text-sm text-zinc-400">
+                  Loading collections...
+                </span>
               </div>
             ) : isError ? (
               <div className="text-center py-4 text-red-400 text-sm">
@@ -172,7 +179,9 @@ const SaveRequestToCollectionModal = ({
               </div>
             ) : filteredCollections.length === 0 ? (
               <div className="text-center py-4 text-zinc-500 text-sm">
-                {searchTerm ? "No collections found" : "No collections available"}
+                {searchTerm
+                  ? "No collections found"
+                  : "No collections available"}
               </div>
             ) : (
               filteredCollections.map((collection) => (
@@ -193,13 +202,17 @@ const SaveRequestToCollectionModal = ({
                     ) : (
                       <Folder className="w-4 h-4 text-zinc-400" />
                     )}
-                    <span className={`text-sm font-medium ${
-                      selectedCollectionId === collection.id ? "text-indigo-200" : "text-zinc-200"
-                    }`}>
+                    <span
+                      className={`text-sm font-medium ${
+                        selectedCollectionId === collection.id
+                          ? "text-indigo-200"
+                          : "text-zinc-200"
+                      }`}
+                    >
                       {collection.name}
                     </span>
                   </div>
-                  
+
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                       <span className="text-zinc-500">⋯</span>
@@ -217,7 +230,9 @@ const SaveRequestToCollectionModal = ({
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-zinc-400">Saving to:</span>
               <Folder className="w-4 h-4 text-indigo-400" />
-              <span className="text-indigo-400 font-medium">{selectedCollection.name}</span>
+              <span className="text-indigo-400 font-medium">
+                {selectedCollection.name}
+              </span>
             </div>
           </div>
         )}

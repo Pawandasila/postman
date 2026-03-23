@@ -17,9 +17,7 @@ import {
   FileText, 
   Sparkles, 
   Loader2, 
-  Download,
   CheckCircle2,
-  AlertCircle,
   Trash2
 } from "lucide-react";
 import { toast } from "sonner";
@@ -48,8 +46,8 @@ const DocsGeneratorModal = ({ isOpen, onClose }: DocsGeneratorModalProps) => {
   const [selectedRequestId, setSelectedRequestId] = useState<string>("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
 
-  const selectedCollection = collections?.find((c: any) => c.id === selectedCollectionId);
-  const requests = selectedCollection?.requests || [];
+  const selectedCollection = collections?.find((c: { id: string; requests: unknown[] }) => c.id === selectedCollectionId);
+  const requests = (selectedCollection?.requests as { id: string; method: string; name: string; url: string }[]) || [];
 
   const handleGenerateDocs = async () => {
     if (!selectedRequestId) {
@@ -164,7 +162,7 @@ const DocsGeneratorModal = ({ isOpen, onClose }: DocsGeneratorModalProps) => {
                     <SelectValue placeholder="Select a collection..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {collections?.map((collection: any) => (
+                    {collections?.map((collection: { id: string; name: string; _count?: { requests: number } }) => (
                       <SelectItem key={collection.id} value={collection.id}>
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4" />
@@ -194,7 +192,7 @@ const DocsGeneratorModal = ({ isOpen, onClose }: DocsGeneratorModalProps) => {
                           No requests in this collection
                         </div>
                       ) : (
-                        requests.map((request: any) => (
+                        requests.map((request: { id: string; method: string; name: string; url: string }) => (
                           <button
                             key={request.id}
                             onClick={() => setSelectedRequestId(request.id)}

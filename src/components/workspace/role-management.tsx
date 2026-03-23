@@ -53,11 +53,10 @@ import {
   Eye, 
   Trash2, 
   Crown,
-  Mail,
   Calendar,
   Users
 } from 'lucide-react';
-import { ROLE_DESCRIPTIONS, PERMISSION_DESCRIPTIONS } from '@/lib/permissions';
+import { ROLE_DESCRIPTIONS } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 
 interface WorkspaceMember {
@@ -355,7 +354,6 @@ function OwnerCard({ owner }: { owner: WorkspaceOwner }) {
 }
 
 export default function RoleManagement({
-  workspaceId,
   members,
   owner,
   currentUserRole,

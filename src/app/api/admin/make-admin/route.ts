@@ -37,10 +37,10 @@ export async function POST(request: Request) {
       message: "User role updated to ADMIN",
       user: updatedUser,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Make admin error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to update user role" },
+      { error: (error as Error).message || "Failed to update user role" },
       { status: 500 }
     );
   }

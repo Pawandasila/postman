@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addRequestToCollection, deleteRequest, editRequest, getAllRequestsInCollection, run, runUnsavedRequest, saveRequest, type Request } from "../actions";
 import { useRequestPlaygroundStore, RequestTab } from "../store/useRequestStore";
+import { REST_METHOD } from "@prisma/client";
 
 export const useAddRequestToCollection = (collectionId: string) => {
   const queryClient = useQueryClient();
@@ -119,7 +120,7 @@ export function useRunRequest(tab: RequestTab) {
       if (tab.requestId) {
         const requestData: Request = {
           name: tab.title || "Untitled Request",
-          method: tab.method as any,
+          method: tab.method as REST_METHOD,
           url: tab.url || "",
           body: tab.body,
           headers: tab.headers,
@@ -131,7 +132,7 @@ export function useRunRequest(tab: RequestTab) {
       // If no ID (unsaved), use runUnsavedRequest with current tab data
       const requestData: Request = {
         name: tab.title || "Untitled Request",
-        method: tab.method as any,
+        method: tab.method as REST_METHOD,
         url: tab.url || "",
         body: tab.body,
         headers: tab.headers,

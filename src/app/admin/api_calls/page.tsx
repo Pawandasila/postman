@@ -12,7 +12,6 @@ import {
   Loader2,
   Activity,
   ArrowLeft,
-  TrendingUp,
   Clock,
   CheckCircle,
   XCircle,
@@ -81,8 +80,8 @@ export default function ApiCallsPage() {
       }
 
       setStats(data.stats);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }

@@ -10,12 +10,10 @@ import {
   Folder, 
   Zap, 
   Activity,
-  ArrowRight,
   CheckCircle2,
   XCircle,
   AlertCircle,
   FileJson,
-  Code,
   Globe
 } from "lucide-react";
 import { format } from "date-fns";
@@ -25,7 +23,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface HistoryDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  entry: any;
+  entry: {
+    method: string;
+    requestName: string;
+    url: string;
+    statusCode?: number;
+    statusText?: string;
+    responseTime?: number;
+    responseSize?: number;
+    executedAt: string;
+    expiresAt: string;
+    workspaceName: string;
+    collectionName?: string;
+    headers?: unknown;
+    params?: unknown;
+    body?: unknown;
+    response?: unknown;
+  } | null;
 }
 
 const HistoryDetailModal = ({ isOpen, onClose, entry }: HistoryDetailModalProps) => {
@@ -238,7 +252,7 @@ const InfoRow = ({ icon, label, value, subtext }: InfoRowProps) => (
 );
 
 interface JsonDisplayProps {
-  data: any;
+  data: unknown;
   emptyMessage: string;
 }
 

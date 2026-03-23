@@ -3,10 +3,10 @@ import {
   FilePlus,
   Folder,
   Trash,
-  Edit,
   ChevronDown,
   ChevronRight,
   Shield,
+  Edit,
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -30,7 +30,7 @@ import DeleteRequestModal from "@/modules/request/components/delete-request";
 import { useGetAllRequestsInCollection } from "@/modules/request/hooks/Request";
 import { REST_METHOD } from "@prisma/client";
 import { useRequestPlaygroundStore } from "@/modules/request/store/useRequestStore";
-import { useWorkspaceStore } from "@/modules/Layout/Store";
+
 import {
   useUserWorkspacePermissions,
   useCanCreateCollection,
@@ -56,12 +56,10 @@ const CollectionFolder = ({ collection }: Props) => {
 
   const folderRef = useRef<HTMLDivElement>(null);
 
-  const { selectedWorkspace } = useWorkspaceStore();
-
   const { data: userPermissions } = useUserWorkspacePermissions(
-    collection.workspaceId
+    collection.workspaceId,
   );
-  
+
   // Permission checks
   const canCreateRequest = useCanCreateCollection(collection.workspaceId);
   const canEditCollection = useCanEditCollection(collection.workspaceId);
@@ -219,7 +217,7 @@ const CollectionFolder = ({ collection }: Props) => {
                       </div>
                     </DropdownMenuItem>
                   )}
-                  
+
                   {/* Rename - Only for EDITOR and ADMIN */}
                   {canEditCollection && (
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
@@ -234,7 +232,7 @@ const CollectionFolder = ({ collection }: Props) => {
                       </div>
                     </DropdownMenuItem>
                   )}
-                  
+
                   {/* Delete - Only for ADMIN */}
                   {canDeleteCollection && (
                     <DropdownMenuItem
@@ -252,13 +250,15 @@ const CollectionFolder = ({ collection }: Props) => {
                       </div>
                     </DropdownMenuItem>
                   )}
-                  
+
                   {/* Show message if no actions available (VIEWER) */}
-                  {!canCreateRequest && !canEditCollection && !canDeleteCollection && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
-                      Read-only access
-                    </div>
-                  )}
+                  {!canCreateRequest &&
+                    !canEditCollection &&
+                    !canDeleteCollection && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
+                        Read-only access
+                      </div>
+                    )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -282,10 +282,27 @@ const CollectionFolder = ({ collection }: Props) => {
               </div>
             ) : hasRequests ? (
               <div className="ml-6 border-l border-border pl-3 space-y-0.5 py-1">
-                {requests.map((request: any) => (
+                {requests.map((request) => (
                   <div
                     key={request.id}
-                    onClick={() => openRequestTab(request)}
+                    onClick={() =>
+                      openRequestTab({
+                        id: request.id,
+                        name: request.name,
+                        method: request.method,
+                        url: request.url,
+                        body: request.body
+                          ? JSON.stringify(request.body, null, 2)
+                          : "",
+                        headers: request.headers
+                          ? JSON.stringify(request.headers, null, 2)
+                          : "",
+                        parameters: request.parameters
+                          ? JSON.stringify(request.parameters, null, 2)
+                          : "",
+                        collectionId: request.collectionId,
+                      })
+                    }
                     className="flex items-center justify-between py-1.5 px-2 hover:bg-accent/50 rounded-md cursor-pointer group/request transition-colors"
                   >
                     <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -340,7 +357,7 @@ const CollectionFolder = ({ collection }: Props) => {
                               Edit
                             </DropdownMenuItem>
                           )}
-                          
+
                           {/* Delete Request - Only for ADMIN */}
                           {canDeleteCollection && (
                             <DropdownMenuItem
@@ -360,7 +377,7 @@ const CollectionFolder = ({ collection }: Props) => {
                               Delete
                             </DropdownMenuItem>
                           )}
-                          
+
                           {/* Show message if no actions available (VIEWER) */}
                           {!canEditCollection && !canDeleteCollection && (
                             <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">

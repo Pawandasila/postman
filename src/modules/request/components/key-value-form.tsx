@@ -22,7 +22,7 @@ const keyValueSchema = z.object({
       key: z.string().min(1, "Key is required"),
       value: z.string().min(1, "Value is required"),
       enabled: z.boolean().default(true).optional(),
-    })
+    }),
   ),
 });
 
@@ -73,14 +73,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
     name: "items",
   });
 
-  const handleSubmit = (data: KeyValueFormData) => {
-    const filteredItems = data.items
-      .filter((item) => item.enabled && (item.key.trim() || item.value.trim()))
-      .map(({ key, value }) => ({ key, value }));
-
-    onSubmit(filteredItems);
-  };
-
   const addNewRow = () => {
     append({ key: "", value: "", enabled: true });
   };
@@ -101,15 +93,18 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
   const getFilteredItemsFromValues = (items: KeyValueItem[]) =>
     items
       .filter(
-        (item) => item.enabled && (item.key?.trim() || item.value?.trim())
+        (item) => item.enabled && (item.key?.trim() || item.value?.trim()),
       )
       .map(({ key, value }) => ({ key, value }));
 
-  const debounce = (fn: (...args: any[]) => void, wait = 500) => {
+  const debounce = <T extends unknown[]>(
+    func: (...args: T) => void,
+    wait: number,
+  ) => {
     let t: ReturnType<typeof setTimeout> | null = null;
-    return (...args: any[]) => {
+    return (...args: T) => {
       if (t) clearTimeout(t);
-      t = setTimeout(() => fn(...args), wait);
+      t = setTimeout(() => func(...args), wait);
     };
   };
 
@@ -122,22 +117,22 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
         onSubmit(filtered);
       }
     },
-    [onSubmit]
+    [onSubmit],
   );
 
-  const debouncedSaveRef = useRef(saveIfChanged);
-  useEffect(() => {
-    debouncedSaveRef.current = saveIfChanged;
-  }, [saveIfChanged]);
-
-  const debouncedInvokerRef = useRef<((items: KeyValueItem[]) => void) | null>(
-    null
+  // Use a ref to hold the debounced function
+  const debouncedInvokerRef = useRef(
+    debounce((items: KeyValueItem[]) => {
+      saveIfChanged(items);
+    }, 500),
   );
+
+  // Update the debounced function if saveIfChanged changes (though useCallback should prevent frequent changes)
   useEffect(() => {
     debouncedInvokerRef.current = debounce((items: KeyValueItem[]) => {
-      debouncedSaveRef.current(items);
+      saveIfChanged(items);
     }, 500);
-  }, []);
+  }, [saveIfChanged]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -156,11 +151,16 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
             <div className="flex items-center gap-3">
               <div className="h-8 w-1 bg-gradient-to-b from-primary via-primary to-primary/50 rounded-full shadow-sm"></div>
               <h3 className="text-sm font-semibold text-foreground">
-                {placeholder.description || 'Query Parameters'}
+                {placeholder.description || "Query Parameters"}
               </h3>
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                {fields.filter(f => form.watch(`items.${fields.indexOf(f)}.enabled`)).length} active
+                {
+                  fields.filter((f) =>
+                    form.watch(`items.${fields.indexOf(f)}.enabled`),
+                  ).length
+                }{" "}
+                active
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -177,7 +177,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
             </div>
           </div>
 
-          
           <div className="space-y-3">
             {fields.map((field, index) => (
               <div
@@ -186,10 +185,9 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                   "grid grid-cols-12 gap-4 p-4 rounded-lg border transition-all duration-200",
                   form.watch(`items.${index}.enabled`)
                     ? "bg-card/50 border-border hover:bg-card hover:border-primary/30 hover:shadow-md"
-                    : "bg-muted/30 border-border/50 opacity-60 hover:opacity-80"
+                    : "bg-muted/30 border-border/50 opacity-60 hover:opacity-80",
                 )}
               >
-                
                 <div className="col-span-5">
                   <FormField
                     control={form.control}
@@ -210,7 +208,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                   />
                 </div>
 
-                
                 <div className="col-span-5">
                   <FormField
                     control={form.control}
@@ -248,7 +245,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                                 "h-8 w-8 p-0 rounded-md border-2 transition-all duration-200 shadow-sm",
                                 checkboxField.value
                                   ? "bg-green-500 dark:bg-green-600 border-green-500 dark:border-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg hover:shadow-green-500/30"
-                                  : "border-destructive/50 text-destructive hover:border-destructive hover:bg-destructive/10"
+                                  : "border-destructive/50 text-destructive hover:border-destructive hover:bg-destructive/10",
                               )}
                             >
                               {checkboxField.value ? (
@@ -263,7 +260,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                     )}
                   />
                 </div>
-                
+
                 <div className="col-span-1 flex items-center justify-center">
                   <Button
                     type="button"
@@ -275,7 +272,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
                       "h-8 w-8 p-0 transition-all duration-200 rounded-md",
                       fields.length <= 1
                         ? "text-muted-foreground cursor-not-allowed opacity-30"
-                        : "text-destructive hover:text-destructive/80 hover:bg-destructive/10 hover:border hover:border-destructive/30"
+                        : "text-destructive hover:text-destructive/80 hover:bg-destructive/10 hover:border hover:border-destructive/30",
                     )}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -285,7 +282,6 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
             ))}
           </div>
 
-          
           <div className="flex justify-between items-center pt-4 border-t border-border">
             <span className="text-xs text-muted-foreground flex items-center gap-2 font-medium">
               <span className="relative flex h-2 w-2">
@@ -295,7 +291,7 @@ const KeyValueFormEditor: React.FC<KeyValueFormEditorProps> = ({
               Changes saved automatically
             </span>
             <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md border border-border">
-              {fields.length} {fields.length === 1 ? 'row' : 'rows'}
+              {fields.length} {fields.length === 1 ? "row" : "rows"}
             </span>
           </div>
         </div>

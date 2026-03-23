@@ -27,13 +27,13 @@ export const generateWorkspaceInvite = async (workspaceId: string) => {
     });
 
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invite.token}`;
-    
+
     return {
       success: true,
       inviteUrl,
       message: "Invite link created successfully",
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       message: "Failed to create invite link",
@@ -102,10 +102,11 @@ export const getAllWorkspaceMembers = async (workspaceId: string) => {
   });
 };
 
-
-export async function detectWheatherUserIsInvited(userId: string, workspaceId: string) {
+export async function detectWheatherUserIsInvited(
+  userId: string,
+  workspaceId: string,
+) {
   try {
-    
     const existingMember = await db.workspaceMember.findUnique({
       where: {
         userId_workspaceId: {
@@ -125,12 +126,11 @@ export async function detectWheatherUserIsInvited(userId: string, workspaceId: s
       };
     }
 
-    
     const pendingInvites = await db.workspaceInvite.findMany({
       where: {
         workspaceId: workspaceId,
         expiresAt: {
-          gt: new Date(), 
+          gt: new Date(),
         },
       },
       include: {
@@ -146,7 +146,7 @@ export async function detectWheatherUserIsInvited(userId: string, workspaceId: s
         isMember: false,
         message: "User has pending invites for this workspace",
         inviteCount: pendingInvites.length,
-        invites: pendingInvites.map(invite => ({
+        invites: pendingInvites.map((invite) => ({
           id: invite.id,
           token: invite.token,
           createdAt: invite.createdAt,
@@ -162,7 +162,6 @@ export async function detectWheatherUserIsInvited(userId: string, workspaceId: s
       isMember: false,
       message: "User is not invited and not a member of this workspace",
     };
-
   } catch (error) {
     console.error("Error detecting user invite status:", error);
     return {

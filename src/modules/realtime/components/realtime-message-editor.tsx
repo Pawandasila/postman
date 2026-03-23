@@ -9,7 +9,6 @@ import {
   FileText,
   Settings2,
   Download,
-  Upload,
   ChevronDown,
 } from "lucide-react";
 import { useWsStore } from "../hooks/useWs";
@@ -26,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const RealtimeMessageEditor = () => {
-  const { send, status, isConnected, draftMessage, setDraftMessage, messages } =
+  const { send, status, draftMessage, setDraftMessage, messages } =
     useWsStore();
 
   const [isSending, setIsSending] = useState(false);
@@ -68,18 +67,6 @@ const RealtimeMessageEditor = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleEditorDidMount = useCallback(
-    (editor: editor.IStandaloneCodeEditor, monaco: any) => {
-      editorRef.current = editor;
-
-      // Add Ctrl+Enter shortcut to send message
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-        handleSendMessage();
-      });
-    },
-    []
-  );
-
   const handleSendMessage = useCallback(async () => {
     if (!status || status !== "connected") {
       toast.error("WebSocket is not connected!");
@@ -98,7 +85,7 @@ const RealtimeMessageEditor = () => {
       let messageToSend;
       try {
         messageToSend = JSON.parse(draftMessage);
-      } catch (parseError) {
+      } catch {
         // If not valid JSON, send as string
         messageToSend = draftMessage;
       }
@@ -120,6 +107,19 @@ const RealtimeMessageEditor = () => {
     }
   }, [draftMessage, status, send]);
 
+  const handleEditorDidMount = useCallback(
+    (editor: editor.IStandaloneCodeEditor, monaco: unknown) => {
+      editorRef.current = editor;
+      const m = monaco as { KeyMod: { CtrlCmd: number }; KeyCode: { Enter: number } };
+
+      // Add Ctrl+Enter shortcut to send message
+      editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Enter, () => {
+        handleSendMessage();
+      });
+    },
+    [handleSendMessage]
+  );
+
   const handleFormatJSON = useCallback(() => {
     try {
       const parsed = JSON.parse(draftMessage);
@@ -129,7 +129,7 @@ const RealtimeMessageEditor = () => {
         editorRef.current.setValue(formatted);
       }
       toast.success("JSON formatted successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Invalid JSON format");
     }
   }, [draftMessage, setDraftMessage]);

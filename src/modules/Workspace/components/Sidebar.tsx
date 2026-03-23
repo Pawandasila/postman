@@ -10,15 +10,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCanCreateCollection } from '@/hooks/use-workspace-permissions';
 
+type Workspace = {
+    id: string;
+    name: string;
+}
+
 interface Props {
-  currentWorkspace: any;
+  currentWorkspace: Workspace | null;
 }
 
 const TabbedSidebar = ({ currentWorkspace }: Props) => {
   const [activeTab, setActiveTab] = useState('Collections');
   const [isModalOpen, setIsModalOpen] = useState(false); 
 
-  const { data: collectionsResponse, isLoading, isError } = useCollections(currentWorkspace?.id);
+  const { data: collectionsResponse, isLoading } = useCollections(currentWorkspace?.id);
   
   const collections = collectionsResponse?.success ? collectionsResponse.collections : [];
   
@@ -81,7 +86,7 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
                 </div>
               ) : collections && collections.length > 0 ? (
                 <div className="p-2 space-y-1">
-                  {collections.map((collection: any) => (
+                  {collections.map((collection) => (
                     <CollectionFolder key={collection.id} collection={collection} />
                   ))}
                 </div>
@@ -211,7 +216,7 @@ const TabbedSidebar = ({ currentWorkspace }: Props) => {
 
       
       <CreateCollection
-        workspaceId={currentWorkspace?.id}
+        workspaceId={currentWorkspace?.id || ''}
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />

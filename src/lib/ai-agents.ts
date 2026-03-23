@@ -1,4 +1,4 @@
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 
@@ -32,7 +32,7 @@ const RequestNameSchema = z.object({
           .min(0)
           .max(1)
           .describe("Confidence score for this suggestion"),
-      })
+      }),
     )
     .length(3)
     .describe("Three different name suggestions ordered by relevance"),
@@ -157,7 +157,7 @@ export async function generateJsonBody({
     let parsedJsonBody;
     try {
       parsedJsonBody = JSON.parse(result.object.jsonBody);
-    } catch (parseError) {
+    } catch {
       // If parsing fails, return the string as-is
       parsedJsonBody = result.object.jsonBody;
     }
@@ -186,7 +186,7 @@ export async function generateSmartJsonBody({
   endpoint,
   context,
   existingSchema,
-}: JsonBodyGenerationParams & { existingSchema?: Record<string, any> }) {
+}: JsonBodyGenerationParams & { existingSchema?: Record<string, unknown> }) {
   try {
     const enhancedPrompt = `
         You are an expert API developer creating JSON request bodies.
@@ -226,7 +226,7 @@ export async function generateSmartJsonBody({
     let parsedJsonBody;
     try {
       parsedJsonBody = JSON.parse(result.object.jsonBody);
-    } catch (parseError) {
+    } catch {
       // If parsing fails, return the string as-is
       parsedJsonBody = result.object.jsonBody;
     }
@@ -291,7 +291,7 @@ export async function generateStructuredJsonBody({
   }
 }
 
-export function validateGeneratedJson(jsonBody: Record<string, any>): {
+export function validateGeneratedJson(jsonBody: Record<string, unknown>): {
   isValid: boolean;
   errors: string[];
   suggestions: string[];
@@ -312,14 +312,14 @@ export function validateGeneratedJson(jsonBody: Record<string, any>): {
     const hasNullValues = JSON.stringify(jsonBody).includes("null");
     if (hasNullValues) {
       suggestions.push(
-        "Consider replacing null values with appropriate defaults"
+        "Consider replacing null values with appropriate defaults",
       );
     }
 
     // Check for meaningful property names
     const keys = Object.keys(jsonBody);
     const hasGenericKeys = keys.some((key) =>
-      ["data", "value", "item", "field"].includes(key.toLowerCase())
+      ["data", "value", "item", "field"].includes(key.toLowerCase()),
     );
 
     if (hasGenericKeys) {
@@ -331,7 +331,7 @@ export function validateGeneratedJson(jsonBody: Record<string, any>): {
       errors,
       suggestions,
     };
-  } catch (error) {
+  } catch {
     errors.push("Invalid JSON structure");
     return {
       isValid: false,
@@ -342,7 +342,7 @@ export function validateGeneratedJson(jsonBody: Record<string, any>): {
 }
 
 export async function batchSuggestRequestNames(
-  requests: RequestSuggestionParams[]
+  requests: RequestSuggestionParams[],
 ): Promise<
   Array<{
     originalRequest: RequestSuggestionParams;
@@ -351,7 +351,7 @@ export async function batchSuggestRequestNames(
   }>
 > {
   const results = await Promise.allSettled(
-    requests.map((request) => suggestRequestName(request))
+    requests.map((request) => suggestRequestName(request)),
   );
 
   return results.map((result, index) => ({
@@ -375,83 +375,108 @@ export interface ApiDocGenerationParams {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   url: string;
   description?: string;
-  headers?: Record<string, any>;
-  queryParams?: Record<string, any>;
-  body?: Record<string, any>;
+  headers?: Record<string, unknown>;
+  queryParams?: Record<string, unknown>;
+  body?: Record<string, unknown>;
   collectionName?: string;
   workspaceName?: string;
 }
 
 const ApiDocSchema = z.object({
   title: z.string().describe("Clear, concise title for the API endpoint"),
-  summary: z.string().describe("Brief 1-2 sentence summary of what this API does"),
-  description: z.string().describe("Detailed description of the API functionality and use cases"),
-  
+  summary: z
+    .string()
+    .describe("Brief 1-2 sentence summary of what this API does"),
+  description: z
+    .string()
+    .describe("Detailed description of the API functionality and use cases"),
+
   endpoint: z.object({
     method: z.string().describe("HTTP method"),
     url: z.string().describe("API endpoint URL"),
     baseUrl: z.string().optional().describe("Base URL if applicable"),
   }),
-  
-  authentication: z.object({
-    required: z.boolean().describe("Whether authentication is required"),
-    type: z.string().optional().describe("Type of authentication (Bearer, API Key, etc.)"),
-    description: z.string().optional().describe("How to authenticate"),
-  }).optional(),
-  
-  headers: z.array(
-    z.object({
-      name: z.string(),
-      type: z.string(),
-      required: z.boolean(),
-      description: z.string(),
-      example: z.string().optional(),
+
+  authentication: z
+    .object({
+      required: z.boolean().describe("Whether authentication is required"),
+      type: z
+        .string()
+        .optional()
+        .describe("Type of authentication (Bearer, API Key, etc.)"),
+      description: z.string().optional().describe("How to authenticate"),
     })
-  ).describe("Request headers"),
-  
-  queryParameters: z.array(
-    z.object({
-      name: z.string(),
-      type: z.string(),
-      required: z.boolean(),
+    .optional(),
+
+  headers: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean(),
+        description: z.string(),
+        example: z.string().optional(),
+      }),
+    )
+    .describe("Request headers"),
+
+  queryParameters: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean(),
+        description: z.string(),
+        example: z.string().optional(),
+      }),
+    )
+    .optional()
+    .describe("Query parameters"),
+
+  requestBody: z
+    .object({
+      contentType: z.string(),
       description: z.string(),
-      example: z.string().optional(),
+      schema: z.string().describe("JSON schema or structure description"),
+      example: z.string().describe("Example request body as JSON string"),
     })
-  ).optional().describe("Query parameters"),
-  
-  requestBody: z.object({
-    contentType: z.string(),
-    description: z.string(),
-    schema: z.string().describe("JSON schema or structure description"),
-    example: z.string().describe("Example request body as JSON string"),
-  }).optional(),
-  
-  responses: z.array(
-    z.object({
-      statusCode: z.number(),
-      description: z.string(),
-      example: z.string().optional(),
-    })
-  ).describe("Possible response status codes"),
-  
-  examples: z.array(
-    z.object({
-      title: z.string(),
-      description: z.string(),
-      request: z.string().describe("Example request as curl or code snippet"),
-      response: z.string().optional().describe("Example response"),
-    })
-  ).optional(),
-  
-  notes: z.array(z.string()).optional().describe("Additional notes or important information"),
-  
-  errorCodes: z.array(
-    z.object({
-      code: z.number(),
-      message: z.string(),
-      description: z.string(),
-    })
-  ).optional(),
+    .optional(),
+
+  responses: z
+    .array(
+      z.object({
+        statusCode: z.number(),
+        description: z.string(),
+        example: z.string().optional(),
+      }),
+    )
+    .describe("Possible response status codes"),
+
+  examples: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+        request: z.string().describe("Example request as curl or code snippet"),
+        response: z.string().optional().describe("Example response"),
+      }),
+    )
+    .optional(),
+
+  notes: z
+    .array(z.string())
+    .optional()
+    .describe("Additional notes or important information"),
+
+  errorCodes: z
+    .array(
+      z.object({
+        code: z.number(),
+        message: z.string(),
+        description: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export async function generateApiDocumentation(params: ApiDocGenerationParams) {

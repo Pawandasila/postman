@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { REST_METHOD } from "@prisma/client";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,10 +11,7 @@ export async function POST(request: NextRequest) {
     const { requestId } = requestBody;
 
     if (!requestId) {
-      return NextResponse.json(
-        { error: "Missing requestId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing requestId" }, { status: 400 });
     }
 
     // Fetch request details from database
@@ -29,16 +27,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!requestData) {
-      return NextResponse.json(
-        { error: "Request not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
     // Parse JSON fields
-    const parseJsonSafely = (data: any): any => {
+    const parseJsonSafely = (data: unknown): unknown => {
       if (!data) return undefined;
-      if (typeof data === 'string') {
+      if (typeof data === "string") {
         try {
           return JSON.parse(data);
         } catch {
@@ -48,25 +43,17 @@ export async function POST(request: NextRequest) {
       return data;
     };
 
-    const headers = parseJsonSafely(requestData.headers) || {};
-    const queryParams = parseJsonSafely(requestData.parameters) || {};
-    const bodyData = parseJsonSafely(requestData.body);
+    const headers = (parseJsonSafely(requestData.headers) || {}) as { [key: string]: unknown };
+    const queryParams = (parseJsonSafely(requestData.parameters) || {}) as { [key: string]: unknown };
+    const bodyData = parseJsonSafely(requestData.body) as Record<string, unknown> | undefined;
 
     // Add default headers if not present
-    if (!headers['Content-Type'] && !headers['content-type']) {
-      headers['Content-Type'] = 'application/json';
+    if (!headers["Content-Type"] && !headers["content-type"]) {
+      headers["Content-Type"] = "application/json";
     }
-    if (!headers['Accept'] && !headers['accept']) {
-      headers['Accept'] = 'application/json';
+    if (!headers["Accept"] && !headers["accept"]) {
+      headers["Accept"] = "application/json";
     }
-
-    console.log('🔍 Generating docs for request:', {
-      id: requestData.id,
-      name: requestData.name,
-      method: requestData.method,
-      url: requestData.url,
-      hasBody: !!bodyData,
-    });
 
     // Dynamically import to avoid Turbopack issues
     const { generateApiDocumentation } = await import("@/lib/ai-agents");
@@ -75,7 +62,7 @@ export async function POST(request: NextRequest) {
     const result = await generateApiDocumentation({
       requestId: requestData.id,
       requestName: requestData.name,
-      method: requestData.method as any,
+      method: requestData.method as REST_METHOD,
       url: requestData.url,
       headers,
       queryParams,
@@ -84,12 +71,10 @@ export async function POST(request: NextRequest) {
       workspaceName: requestData.collection.workspace.name,
     });
 
-    console.log('✅ Docs generated successfully');
-
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || "Failed to generate documentation" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -105,11 +90,11 @@ export async function POST(request: NextRequest) {
         updatedAt: requestData.updatedAt,
       },
     });
-  } catch (error) {
-    console.error('❌ Error generating documentation:', error);
+  } catch (err) {
+    console.error("❌ Error generating documentation:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
